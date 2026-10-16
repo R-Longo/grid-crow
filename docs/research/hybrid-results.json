@@ -1,0 +1,746 @@
+[
+ {
+  "key": "SUNCARD_24x32_10",
+  "applied": true,
+  "reason": "restored 237 stitches",
+  "bgShare": 0.91,
+  "thin": 0.98,
+  "changed": 237,
+  "pct": 1.71,
+  "invalid": 0,
+  "photo": {
+   "recall": 0.714,
+   "spurious": 127,
+   "lone": 12,
+   "yarn": 1151,
+   "ink": 1506
+  },
+  "hyb": {
+   "recall": 0.751,
+   "spurious": 139,
+   "lone": 2,
+   "yarn": 1393,
+   "ink": 1622
+  }
+ },
+ {
+  "key": "SUNCARD_16x20_6",
+  "applied": true,
+  "reason": "restored 122 stitches",
+  "bgShare": 0.91,
+  "thin": 0.98,
+  "changed": 122,
+  "pct": 2.12,
+  "invalid": 0,
+  "photo": {
+   "recall": 0.619,
+   "spurious": 126,
+   "lone": 1,
+   "yarn": 616,
+   "ink": 581
+  },
+  "hyb": {
+   "recall": 0.637,
+   "spurious": 135,
+   "lone": 1,
+   "yarn": 716,
+   "ink": 607
+  }
+ },
+ {
+  "key": "SUNCARD45_16x20_6",
+  "applied": true,
+  "reason": "restored 104 stitches",
+  "bgShare": 0.91,
+  "thin": 0.98,
+  "changed": 104,
+  "pct": 1.81,
+  "invalid": 0,
+  "photo": {
+   "recall": 0.477,
+   "spurious": 86,
+   "lone": 1,
+   "yarn": 583,
+   "ink": 549
+  },
+  "hyb": {
+   "recall": 0.487,
+   "spurious": 103,
+   "lone": 1,
+   "yarn": 656,
+   "ink": 585
+  }
+ },
+ {
+  "key": "TAROT_16x20_10",
+  "applied": false,
+  "reason": "not a drawing (too much ink)",
+  "bgShare": 0.57,
+  "thin": 0.52,
+  "changed": 0,
+  "pct": 0,
+  "invalid": 0,
+  "photo": {
+   "recall": 0.654,
+   "spurious": 608,
+   "lone": 10,
+   "yarn": 2474,
+   "ink": 3105
+  },
+  "hyb": {
+   "recall": 0.654,
+   "spurious": 608,
+   "lone": 10,
+   "yarn": 2474,
+   "ink": 3105
+  }
+ },
+ {
+  "key": "TAROT_18x24_10",
+  "applied": false,
+  "reason": "not a drawing (too much ink)",
+  "bgShare": 0.56,
+  "thin": 0.48,
+  "changed": 0,
+  "pct": 0,
+  "invalid": 0,
+  "photo": {
+   "recall": 0.693,
+   "spurious": 755,
+   "lone": 10,
+   "yarn": 3016,
+   "ink": 4336
+  },
+  "hyb": {
+   "recall": 0.693,
+   "spurious": 755,
+   "lone": 10,
+   "yarn": 3016,
+   "ink": 4336
+  }
+ },
+ {
+  "key": "KITTEN_16x20_8",
+  "applied": false,
+  "reason": "not a drawing (too much ink)",
+  "bgShare": 0.61,
+  "thin": 0.39,
+  "changed": 0,
+  "pct": 0,
+  "invalid": 0,
+  "photo": {
+   "recall": 0.991,
+   "spurious": 1452,
+   "lone": 0,
+   "yarn": 1378,
+   "ink": 3519
+  },
+  "hyb": {
+   "recall": 0.991,
+   "spurious": 1452,
+   "lone": 0,
+   "yarn": 1378,
+   "ink": 3519
+  }
+ },
+ {
+  "key": "CROW_16x20_8",
+  "applied": false,
+  "reason": "not a drawing (ink is filled areas, not lines)",
+  "bgShare": 0.69,
+  "thin": 0.21,
+  "changed": 0,
+  "pct": 0,
+  "invalid": 0,
+  "photo": {
+   "recall": 0.861,
+   "spurious": 29,
+   "lone": 1,
+   "yarn": 876,
+   "ink": 2212
+  },
+  "hyb": {
+   "recall": 0.861,
+   "spurious": 29,
+   "lone": 1,
+   "yarn": 876,
+   "ink": 2212
+  }
+ },
+ {
+  "key": "s01_24x32_10",
+  "applied": false,
+  "reason": "not a drawing (too much ink)",
+  "bgShare": 0.62,
+  "thin": 0.04,
+  "changed": 0,
+  "pct": 0,
+  "invalid": 0,
+  "photo": {
+   "recall": 0.983,
+   "spurious": 128,
+   "lone": 0,
+   "yarn": 1338,
+   "ink": 5804
+  },
+  "hyb": {
+   "recall": 0.983,
+   "spurious": 128,
+   "lone": 0,
+   "yarn": 1338,
+   "ink": 5804
+  }
+ },
+ {
+  "key": "s01_16x20_8",
+  "applied": false,
+  "reason": "not a drawing (too much ink)",
+  "bgShare": 0.59,
+  "thin": 0.05,
+  "changed": 0,
+  "pct": 0,
+  "invalid": 0,
+  "photo": {
+   "recall": 0.97,
+   "spurious": 42,
+   "lone": 0,
+   "yarn": 716,
+   "ink": 2572
+  },
+  "hyb": {
+   "recall": 0.97,
+   "spurious": 42,
+   "lone": 0,
+   "yarn": 716,
+   "ink": 2572
+  }
+ },
+ {
+  "key": "s02_24x32_10",
+  "applied": false,
+  "reason": "not a drawing (ink is filled areas, not lines)",
+  "bgShare": 0.82,
+  "thin": 0.07,
+  "changed": 0,
+  "pct": 0,
+  "invalid": 0,
+  "photo": {
+   "recall": 0.99,
+   "spurious": 6695,
+   "lone": 0,
+   "yarn": 816,
+   "ink": 8815
+  },
+  "hyb": {
+   "recall": 0.99,
+   "spurious": 6695,
+   "lone": 0,
+   "yarn": 816,
+   "ink": 8815
+  }
+ },
+ {
+  "key": "s02_16x20_8",
+  "applied": false,
+  "reason": "not a drawing (ink is filled areas, not lines)",
+  "bgShare": 0.83,
+  "thin": 0.1,
+  "changed": 0,
+  "pct": 0,
+  "invalid": 0,
+  "photo": {
+   "recall": 0.94,
+   "spurious": 212,
+   "lone": 0,
+   "yarn": 348,
+   "ink": 1044
+  },
+  "hyb": {
+   "recall": 0.94,
+   "spurious": 212,
+   "lone": 0,
+   "yarn": 348,
+   "ink": 1044
+  }
+ },
+ {
+  "key": "s03_24x32_10",
+  "applied": false,
+  "reason": "not a drawing (background share too low)",
+  "bgShare": 0.48,
+  "thin": 0.1,
+  "changed": 0,
+  "pct": 0,
+  "invalid": 0,
+  "photo": {
+   "recall": 0.968,
+   "spurious": 136,
+   "lone": 1,
+   "yarn": 1799,
+   "ink": 9052
+  },
+  "hyb": {
+   "recall": 0.968,
+   "spurious": 136,
+   "lone": 1,
+   "yarn": 1799,
+   "ink": 9052
+  }
+ },
+ {
+  "key": "s03_16x20_8",
+  "applied": false,
+  "reason": "not a drawing (background share too low)",
+  "bgShare": 0.52,
+  "thin": 0.12,
+  "changed": 0,
+  "pct": 0,
+  "invalid": 0,
+  "photo": {
+   "recall": 0.961,
+   "spurious": 67,
+   "lone": 0,
+   "yarn": 848,
+   "ink": 3874
+  },
+  "hyb": {
+   "recall": 0.961,
+   "spurious": 67,
+   "lone": 0,
+   "yarn": 848,
+   "ink": 3874
+  }
+ },
+ {
+  "key": "s04_24x32_10",
+  "applied": true,
+  "reason": "restored 201 stitches",
+  "bgShare": 0.81,
+  "thin": 0.69,
+  "changed": 201,
+  "pct": 1.45,
+  "invalid": 0,
+  "photo": {
+   "recall": 0.814,
+   "spurious": 21,
+   "lone": 2,
+   "yarn": 2683,
+   "ink": 3493
+  },
+  "hyb": {
+   "recall": 0.827,
+   "spurious": 21,
+   "lone": 1,
+   "yarn": 2808,
+   "ink": 3555
+  }
+ },
+ {
+  "key": "s04_16x20_8",
+  "applied": true,
+  "reason": "restored 319 stitches",
+  "bgShare": 0.79,
+  "thin": 0.45,
+  "changed": 319,
+  "pct": 5.54,
+  "invalid": 0,
+  "photo": {
+   "recall": 0.543,
+   "spurious": 1,
+   "lone": 18,
+   "yarn": 1046,
+   "ink": 1077
+  },
+  "hyb": {
+   "recall": 0.661,
+   "spurious": 1,
+   "lone": 2,
+   "yarn": 1165,
+   "ink": 1311
+  }
+ },
+ {
+  "key": "s05_24x32_10",
+  "applied": true,
+  "reason": "restored 1989 stitches",
+  "bgShare": 0.72,
+  "thin": 0.55,
+  "changed": 1989,
+  "pct": 14.39,
+  "invalid": 0,
+  "photo": {
+   "recall": 0.737,
+   "spurious": 789,
+   "lone": 8,
+   "yarn": 2610,
+   "ink": 4110
+  },
+  "hyb": {
+   "recall": 0.838,
+   "spurious": 888,
+   "lone": 0,
+   "yarn": 3813,
+   "ink": 4740
+  }
+ },
+ {
+  "key": "s05_16x20_8",
+  "applied": true,
+  "reason": "restored 975 stitches",
+  "bgShare": 0.7,
+  "thin": 0.64,
+  "changed": 975,
+  "pct": 16.93,
+  "invalid": 0,
+  "photo": {
+   "recall": 0.543,
+   "spurious": 173,
+   "lone": 31,
+   "yarn": 889,
+   "ink": 1387
+  },
+  "hyb": {
+   "recall": 0.724,
+   "spurious": 210,
+   "lone": 0,
+   "yarn": 1645,
+   "ink": 1890
+  }
+ },
+ {
+  "key": "s06_24x32_10",
+  "applied": false,
+  "reason": "not a drawing (too much ink)",
+  "bgShare": 0.65,
+  "thin": 0.1,
+  "changed": 0,
+  "pct": 0,
+  "invalid": 0,
+  "photo": {
+   "recall": 0.97,
+   "spurious": 540,
+   "lone": 0,
+   "yarn": 2278,
+   "ink": 6495
+  },
+  "hyb": {
+   "recall": 0.97,
+   "spurious": 540,
+   "lone": 0,
+   "yarn": 2278,
+   "ink": 6495
+  }
+ },
+ {
+  "key": "s06_16x20_8",
+  "applied": false,
+  "reason": "not a drawing (too much ink)",
+  "bgShare": 0.61,
+  "thin": 0.09,
+  "changed": 0,
+  "pct": 0,
+  "invalid": 0,
+  "photo": {
+   "recall": 0.963,
+   "spurious": 172,
+   "lone": 0,
+   "yarn": 993,
+   "ink": 2906
+  },
+  "hyb": {
+   "recall": 0.963,
+   "spurious": 172,
+   "lone": 0,
+   "yarn": 993,
+   "ink": 2906
+  }
+ },
+ {
+  "key": "s07_24x32_10",
+  "applied": false,
+  "reason": "not a drawing (too much ink)",
+  "bgShare": 0.65,
+  "thin": 0.3,
+  "changed": 0,
+  "pct": 0,
+  "invalid": 0,
+  "photo": {
+   "recall": 0.971,
+   "spurious": 211,
+   "lone": 0,
+   "yarn": 2068,
+   "ink": 6259
+  },
+  "hyb": {
+   "recall": 0.971,
+   "spurious": 211,
+   "lone": 0,
+   "yarn": 2068,
+   "ink": 6259
+  }
+ },
+ {
+  "key": "s07_16x20_8",
+  "applied": false,
+  "reason": "not a drawing (ink is filled areas, not lines)",
+  "bgShare": 0.66,
+  "thin": 0.38,
+  "changed": 0,
+  "pct": 0,
+  "invalid": 0,
+  "photo": {
+   "recall": 0.944,
+   "spurious": 65,
+   "lone": 0,
+   "yarn": 922,
+   "ink": 2447
+  },
+  "hyb": {
+   "recall": 0.944,
+   "spurious": 65,
+   "lone": 0,
+   "yarn": 922,
+   "ink": 2447
+  }
+ },
+ {
+  "key": "s08_24x32_10",
+  "applied": false,
+  "reason": "not a drawing (background share too low)",
+  "bgShare": 0.47,
+  "thin": 0.15,
+  "changed": 0,
+  "pct": 0,
+  "invalid": 0,
+  "photo": {
+   "recall": 0.997,
+   "spurious": 3304,
+   "lone": 0,
+   "yarn": 2533,
+   "ink": 11249
+  },
+  "hyb": {
+   "recall": 0.997,
+   "spurious": 3304,
+   "lone": 0,
+   "yarn": 2533,
+   "ink": 11249
+  }
+ },
+ {
+  "key": "s08_16x20_8",
+  "applied": false,
+  "reason": "not a drawing (background share too low)",
+  "bgShare": 0.46,
+  "thin": 0.2,
+  "changed": 0,
+  "pct": 0,
+  "invalid": 0,
+  "photo": {
+   "recall": 0.99,
+   "spurious": 743,
+   "lone": 0,
+   "yarn": 1231,
+   "ink": 4181
+  },
+  "hyb": {
+   "recall": 0.99,
+   "spurious": 743,
+   "lone": 0,
+   "yarn": 1231,
+   "ink": 4181
+  }
+ },
+ {
+  "key": "s09_24x32_10",
+  "applied": true,
+  "reason": "restored 1355 stitches",
+  "bgShare": 0.8,
+  "thin": 0.96,
+  "changed": 1355,
+  "pct": 9.8,
+  "invalid": 0,
+  "photo": {
+   "recall": 0.976,
+   "spurious": 6197,
+   "lone": 1,
+   "yarn": 3825,
+   "ink": 9438
+  },
+  "hyb": {
+   "recall": 0.986,
+   "spurious": 6200,
+   "lone": 0,
+   "yarn": 5110,
+   "ink": 9475
+  }
+ },
+ {
+  "key": "s09_16x20_8",
+  "applied": false,
+  "reason": "not a drawing (too much ink)",
+  "bgShare": 0.63,
+  "thin": 0.4,
+  "changed": 0,
+  "pct": 0,
+  "invalid": 0,
+  "photo": {
+   "recall": 0.982,
+   "spurious": 2265,
+   "lone": 0,
+   "yarn": 1548,
+   "ink": 3749
+  },
+  "hyb": {
+   "recall": 0.982,
+   "spurious": 2265,
+   "lone": 0,
+   "yarn": 1548,
+   "ink": 3749
+  }
+ },
+ {
+  "key": "s10_24x32_10",
+  "applied": true,
+  "reason": "restored 233 stitches",
+  "bgShare": 0.81,
+  "thin": 0.41,
+  "changed": 233,
+  "pct": 1.69,
+  "invalid": 0,
+  "photo": {
+   "recall": 0.946,
+   "spurious": 1150,
+   "lone": 1,
+   "yarn": 1607,
+   "ink": 6029
+  },
+  "hyb": {
+   "recall": 0.949,
+   "spurious": 1158,
+   "lone": 1,
+   "yarn": 1874,
+   "ink": 6054
+  }
+ },
+ {
+  "key": "s10_16x20_8",
+  "applied": true,
+  "reason": "restored 127 stitches",
+  "bgShare": 0.82,
+  "thin": 0.46,
+  "changed": 127,
+  "pct": 2.2,
+  "invalid": 0,
+  "photo": {
+   "recall": 0.894,
+   "spurious": 397,
+   "lone": 3,
+   "yarn": 736,
+   "ink": 2374
+  },
+  "hyb": {
+   "recall": 0.902,
+   "spurious": 397,
+   "lone": 3,
+   "yarn": 890,
+   "ink": 2395
+  }
+ },
+ {
+  "key": "s11_24x32_10",
+  "applied": false,
+  "reason": "not a drawing (too much ink)",
+  "bgShare": 0.59,
+  "thin": 0.19,
+  "changed": 0,
+  "pct": 0,
+  "invalid": 0,
+  "photo": {
+   "recall": 0.98,
+   "spurious": 1024,
+   "lone": 1,
+   "yarn": 1466,
+   "ink": 8595
+  },
+  "hyb": {
+   "recall": 0.98,
+   "spurious": 1024,
+   "lone": 1,
+   "yarn": 1466,
+   "ink": 8595
+  }
+ },
+ {
+  "key": "s11_16x20_8",
+  "applied": false,
+  "reason": "not a drawing (too much ink)",
+  "bgShare": 0.56,
+  "thin": 0.17,
+  "changed": 0,
+  "pct": 0,
+  "invalid": 0,
+  "photo": {
+   "recall": 0.967,
+   "spurious": 348,
+   "lone": 0,
+   "yarn": 744,
+   "ink": 3522
+  },
+  "hyb": {
+   "recall": 0.967,
+   "spurious": 348,
+   "lone": 0,
+   "yarn": 744,
+   "ink": 3522
+  }
+ },
+ {
+  "key": "s12_24x32_10",
+  "applied": true,
+  "reason": "restored 570 stitches",
+  "bgShare": 0.84,
+  "thin": 0.46,
+  "changed": 570,
+  "pct": 4.12,
+  "invalid": 0,
+  "photo": {
+   "recall": 0.837,
+   "spurious": 14,
+   "lone": 1,
+   "yarn": 1318,
+   "ink": 2771
+  },
+  "hyb": {
+   "recall": 0.88,
+   "spurious": 334,
+   "lone": 0,
+   "yarn": 1833,
+   "ink": 3341
+  }
+ },
+ {
+  "key": "s12_16x20_8",
+  "applied": true,
+  "reason": "restored 179 stitches",
+  "bgShare": 0.86,
+  "thin": 0.63,
+  "changed": 179,
+  "pct": 3.11,
+  "invalid": 0,
+  "photo": {
+   "recall": 0.797,
+   "spurious": 0,
+   "lone": 3,
+   "yarn": 635,
+   "ink": 1128
+  },
+  "hyb": {
+   "recall": 0.847,
+   "spurious": 71,
+   "lone": 0,
+   "yarn": 820,
+   "ink": 1307
+  }
+ }
+]

@@ -1,0 +1,130 @@
+# Stage 4 plan: the stitch editor
+
+Status: **4A approved and built. 4B (fill, eyedropper, undo/redo) built and awaiting review. 4C not started.**
+Rules carried over: the production converter (`src/engine/convert/`) is frozen; the 139 existing tests must keep passing;
+the experimental line-art / hybrid / simplification code stays in `src/engine/research/` and is not used; the visual design
+stays as approved except for controls the editor genuinely needs (listed below); no new libraries; no deployment before review.
+
+## 1. What exists today (inspected)
+
+| Piece | Where | Relevant facts |
+|---|---|---|
+| The chart data | `src/engine/convert/types.ts` `StitchMatrix` | `{cols, rows, palette: PaletteColor[], cells: number[][]}`. `cells[row][col]` is a palette index; row 0 is the top, column 0 the left. Documented as the source of truth. |
+| Chart rules | `src/engine/convert/validate.ts` `validateMatrix(m, spec)` | Checks dimensions against the `GridSpec`, palette size ≤ `maxColors`, colors in use ≤ `maxColors`, every index in range. Its header already says "used by editing in Stage 4". |
+| Sizing | `src/engine/geometry.ts` `buildGridSpec`, `src/config/gauge.ts`, `sizes.ts` | Six sizes, portrait/landscape; 4 stitches/in x 4.5 rows/in. Largest chart: 24x32 in = 96 x 144 (or 128 x 108 landscape) = **13,824 stitches**. The editor will not recalculate any of this. |
+| Where the chart lives | `src/components/SetupScreen.tsx` | `result` state `{matrix, crop, aspect}`. **Any change to file, crop, orientation, size or colors calls `invalidate()` and clears `result`.** Pressing "Create My Crochet Grid" again replaces it. Today that is harmless; once edits exist it would silently destroy them (see "Unsaved edits"). |
+| The chart view | `src/components/ChartView.tsx` | One canvas drawn from the matrix at `cellW x cellH` (1/4 in x 1/4.5 in aspect), a separate grid-line canvas, an Original-compare canvas (reads the decoded bitmap, read-only), zoom slider 1-8 (zoom 1 fits the width), a palette list. It redraws the whole canvas whenever the matrix changes. **It has no pointer handling at all**; pan is the browser's native scrolling in `.chart__scroll`. |
+| Converter | `convert/run.ts`, `worker.ts`, `convert.ts` | Runs only when "Create My Crochet Grid" is pressed. The source picture is a decoded `ImageBitmap` (`decode.ts`) that the chart only reads. |
+| Styling | `src/styles/global.css` (`.chart__*`), `tokens.css` | Toolbar toggle buttons, checkbox, zoom slider and palette swatches already exist and will be reused. |
+| Tests | 9 files, 139 tests, Vitest in Node (no DOM environment) | Pure logic is tested without a browser. The editor follows the same approach. |
+
+## 2. Architecture
+
+**Principle: one-way flow, matrix on top.**
+```text
+ pointer events ──► gesture machine ──► editing operations (pure) ──► new StitchMatrix ──► renderer (canvas)
+                    (what is this          (paint, fill, sample,          ▲                  draws FROM the matrix,
+                     gesture?)              undo, redo)                   │                  never writes to it
+                                                                  history of cell diffs
+```
+- **The matrix is the only place colors live.** The canvas is a picture of it. The editor never reads pixels back from a canvas.
+- **Editing is separate from rendering and conversion.** `src/engine/editor/` has no React, no canvas, and does not import
+  anything from `convert/` except types. `convert/` never imports the editor. An architecture test enforces both.
+- **No re-conversion, ever, on an edit.** The editor has no access to the raster, the crop or `convertRaster`. The uploaded image is
+  never passed to it, so it cannot be changed.
+- **Edits only use existing palette indices.** There is no "add color". An edit is `(cell, paletteIndex)` with the index
+  required to exist, so the palette size and the max-colors limit cannot be exceeded by construction, and `validateMatrix` is
+  asserted after every operation in tests.
+- **Palette entries are stable while editing.** A color that drops to zero stitches stays in the palette (greyed, count 0), so
+  indices never shift and undo is exact. Unused entries are only dropped when exporting (Stage 5).
+- **Strokes.** A drag collects the cells it touches (consecutive pointer positions are joined with a line, so a fast drag never
+  leaves gaps) and applies them as one operation. In-progress strokes repaint only the changed cells; on release the stroke becomes
+  one history entry. History entries store only `{cell, before, after}` for cells that actually changed.
+
+Planned modules:
+```text
+src/engine/editor/                  pure, tested without a browser
+  coords.ts      point <-> stitch mapping, zoom-around-a-point, display numbering (0-based inside, 1-based shown)
+  paint.ts       paintCells, cellsOnSegment (gap-free drag), sampleColor            [4A: paint, 4B: sample]
+  fill.ts        floodFill (4-connected, iterative, same-color region)               [4B]
+  history.ts     push / undo / redo, one action per stroke or fill, size cap         [4B]
+  gesture.ts     pointer state machine: idle / painting / panning / pinching         [4A, hardened in 4C]
+src/state/editorState.ts            one reducer: current matrix, converted matrix (for reset), active color, tool, history
+src/components/ChartView.tsx        extended in place: canvas painting, pointer wiring, selectable palette, status line
+src/components/UnsavedGuard.tsx     leave/discard confirmation                                                          [4C]
+```
+
+## 3. Increments
+
+### 4A: Editable stitch canvas
+- Pick one of the existing palette colors (the palette list items become buttons); the selected color is shown clearly.
+- Click or drag to recolor stitches, mouse and touch, directly in the matrix.
+- Accurate zoom (slider as today, plus Ctrl/Cmd + wheel and pinch, anchored under the pointer), pan, and the existing grid-line toggle.
+- Status line: selected color (swatch + hex) and the stitch under the pointer ("Stitch 12 · Row 34").
+- No undo yet in 4A, so one safety control: **Reset to converted** (with confirmation).
+- Not in 4A: fill, eyedropper, undo/redo, leaving-the-page protection.
+
+**Pointer rules (decided here, hardened in 4C):**
+| Input | Draw mode | Pan mode |
+|---|---|---|
+| Mouse left button | paints | pans |
+| Mouse wheel | scrolls; Ctrl/Cmd + wheel zooms | same |
+| Hold Space, or middle button, drag | pans | pans |
+| One finger | paints | pans |
+| Two fingers | always pans and pinch-zooms, never paints | same |
+A second finger landing during a stroke **cancels that stroke and undoes any stitches it already changed**, so starting a pinch never leaves paint behind. `pointercancel` (the browser taking over a touch) does the same.
+
+### 4B: Tools and undo history (built, awaiting review)
+- Flood fill (4-connected region of the same color), eyedropper, undo/redo (toolbar buttons plus Ctrl/Cmd+Z, Shift+Z).
+- One stroke = one action; one fill = one action; undo of either restores exactly the stitches it changed.
+- Redo is cleared by a new edit. History is capped (500 actions / 1,000,000 changed stitches) and cheap because it stores diffs.
+- Built as: Paint / Fill / Pick color tool buttons (Draw mode only), Undo / Redo buttons, Ctrl/Cmd+Z, Shift+Ctrl/Cmd+Z, Ctrl+Y. Fill and Pick act where the pointer is released; a second finger or cancel does nothing. Pick returns to Paint. Reset clears the history. Edits can only use existing palette indices.
+
+### 4C: Reliability
+- Coordinate-mapping tests across zoom levels, screen widths and scroll offsets (see section 4).
+- Panning vs painting: gesture-machine tests plus real-browser checks with mouse and emulated touch.
+- Undo/redo soundness after long strokes and large fills (property tests).
+- Performance on the largest grids.
+- **Unsaved edits:** a "leave this page?" warning while there are edits, and a discard confirmation before anything that would replace the edited chart (new "Create My Crochet Grid", changing file / crop / orientation / size / max colors, Reset to converted). Until Stage 5 (saving), edits live only while the page is open.
+
+## 4. UI additions (everything else keeps the approved look)
+1. Palette swatches become selectable (selected state uses the existing focus/pressed styling).
+2. A Draw / Pan toggle in the existing chart toolbar (needed on touch, where one finger cannot both paint and scroll).
+3. A one-line status text under the toolbar: selected color + stitch coordinates.
+4. A "Reset to converted" button (4A), Undo / Redo and tool buttons (4B), a discard confirmation (4C).
+
+## 5. Test strategy
+| Layer | How | What it proves |
+|---|---|---|
+| Pure logic (Vitest, Node) | tables + property tests on `coords`, `paint`, `fill`, `history`, `gesture` | Mapping exact at zoom 1 / 2.25 / 8, widths 320 / 375 / 768 / 1440, with scroll offsets, high-DPI, edges and outside clicks (every one of the 13,824 stitch centers round-trips to its own stitch); drag has no gaps; fill region exact; random edit sequences: undo all = original, redo all = edited, `validateMatrix` clean, palette length and colors-in-use never grow; one stroke / fill = one undo step. |
+| Gesture machine | synthetic pointer-event sequences | Mouse paints; touch paints in Draw, pans in Pan; two fingers never paint; second finger / cancel reverts the stroke; pointer up outside the canvas ends the stroke cleanly. |
+| Architecture | file-scan test | `convert/` does not import the editor; the editor imports nothing that decodes, resamples or converts; `convertRaster` is never reachable from the editor. |
+| Performance | Node timings on 96 x 144 and 128 x 108 | Full-grid fill, 500-action history (memory and undo time), long strokes; I report real numbers rather than asserting guesses. |
+| Real browser (not part of `npm test`) | Chromium + Playwright run from this workspace, no new project dependency; mouse, emulated touch, pinch, and canvas repaint timing at 24x32 | Pointer and touch handling end to end. **Limit:** this is Chromium with emulated touch. I cannot test real iOS Safari or Android devices, so you will need to try it on a phone before approving 4C. |
+| Regression | existing 139 tests, `tsc`, `npm run build` after every increment | Nothing else moved. |
+
+## 6. Decisions needed
+1. **Coordinate numbering shown to the user.** Internally 0-based, top-left. For display, should row 1 be the **bottom** row (how crochet charts are usually worked and read) or the **top** (matches what you see on screen)? Stitches count from the left either way. I recommend row 1 at the bottom, with the numbering in one function so it is easy to flip.
+2. **Pan on touch.** Draw/Pan toggle plus two-finger pan/pinch (recommended), or the toggle only?
+3. **Colors that reach zero stitches** stay in the palette (recommended, so undo is exact), or are removed immediately?
+4. **Safety in 4A:** include "Reset to converted" now, since there is no undo yet (recommended)?
+5. **Discard prompts (4C):** a small in-app confirmation using the existing button styles (recommended; it is a new bit of UI), or the browser's plain built-in dialog?
+6. **Phones:** at zoom 1 a 24x32 chart is about 3.5 px per stitch on a phone, so precise touch editing needs zoom. I plan a short hint. Is phone editing a must-have for first review, or is a tablet / computer enough?
+
+## 7. Backlog (not Stage 4)
+Detail-density warning at setup; Illustration / Line-art mode (see `docs/research/README.md`); saving, reopening and export (Stage 5); symmetry painting, region move, stamps.
+
+## 8. Usability fix after 4B: Fit to Screen
+The chart used to open at the width of the panel with a fixed 28rem-high scroll box, so tall charts needed scrolling both ways. Now:
+- Zoom is still measured so that 1 = chart as wide as the preview. The **fit zoom** (`fitZoom` in `coords.ts`) is the largest zoom at which the whole chart fits the preview's width AND height (at most 1), rounded down so no edge can be cut off. It is the slider's minimum; the maximum is still 8.
+- The preview box is as large as the chart, up to the available room (width of the panel, `previewHeight` = window height minus 280 px (330 px for the compact layout, 150 px for the sideways phone layout), 260-1100 px), so a fitted chart has no scrollbars and shows all four edges.
+- New charts open fitted. While the chart is "fitted" it follows the preview (window resize, rotation). Once the person zooms in, their zoom is kept; it is only raised if the new fit is larger. Small height changes (a phone's address bar) are ignored.
+- **Fit to Screen** button next to the slider returns to the whole chart and resets panning.
+- Nothing in the matrix, converter, palette or editing logic changed.
+
+## 9. Editor layout pass (responsive workspace)
+- **Wide (900 px and up):** two columns. Chart, view toggle and the zoom / Fit to Screen bar on the left (about 2/3); Editing tools (Paint, Fill, Eyedropper, Pan), Undo / Redo, Yarn colors (a regular grid, hex and stitch count in every cell), utilities (edit count, Reset to converted) and a one-line hint on the right (about 1/3). Both columns are sticky; the sidebar scrolls by itself if it is taller than the screen. The chart column fits the screen height, and the chart is fitted inside it.
+- **Phones and narrow tablets (under 900 px): a separate compact layout, not the sidebar stacked.** Header row with **Fit to Screen** and **Options**; the chart immediately below, fitted whole; a one-line caption (selected color + stitch count, summary or stitch/row under the finger); then a **dock that stays at the bottom of the screen**: the yarn colors in one swipeable row (selected color highlighted and kept in view) and one row with Paint, Fill, Pick (Eyedropper), Pan, then Undo and Redo. The view toggle, grid lines, zoom slider, edit count, Reset to converted and the help text live in the **Options** panel (closes with Escape or a tap outside). A new chart is scrolled to the top of the screen once it is laid out.
+- **Phone held sideways (short and wide):** the dock becomes a column to the right of the chart (colors in a grid, tools in a 3 x 2 grid), so the chart is still shown whole.
+- The chart section may be wider than the 32 rem form column from 40 rem up. Pan is now one of the four tools; choosing another tool returns to drawing. "Pick color" is labelled Eyedropper. Controls are at least 48 px tall.
+- No conversion, matrix, palette or editing-behavior code changed. Decorative art from the mockup (botanical frames, stepper) was not added.

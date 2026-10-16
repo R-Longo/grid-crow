@@ -1,0 +1,7 @@
+# Same rules as netlify.toml, so they also apply when dist/ is deployed by drag-and-drop.
+/sw.js
+  Cache-Control: no-cache
+/manifest.webmanifest
+  Cache-Control: no-cache
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
