@@ -52,6 +52,8 @@ interface ChartViewProps {
   image: DecodedImage | null;
   crop: CropState;
   aspect: number;
+  /** Told how many stitches differ from the converted chart (0 when nothing is edited, and when the chart goes away). */
+  onEditedChange?: (changed: number) => void;
 }
 
 /**
@@ -62,7 +64,7 @@ interface ChartViewProps {
  * conversion: `matrix` below starts as a copy of the converted chart and only changes by painting stitches with a
  * color the chart already has.
  */
-export function ChartView({ matrix: converted, image, crop, aspect }: ChartViewProps) {
+export function ChartView({ matrix: converted, image, crop, aspect, onEditedChange }: ChartViewProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -118,6 +120,14 @@ export function ChartView({ matrix: converted, image, crop, aspect }: ChartViewP
   const [note, setNote] = useState("");
   viewRef.current = view;
   confirmRef.current = confirmReset;
+
+  // Let the page know whether there are hand edits to protect.
+  const editedCb = useRef(onEditedChange);
+  editedCb.current = onEditedChange;
+  useEffect(() => {
+    editedCb.current?.(changed);
+  }, [changed]);
+  useEffect(() => () => editedCb.current?.(0), []);
 
   // A new conversion replaces the chart being edited.
   useEffect(() => {

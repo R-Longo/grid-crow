@@ -142,7 +142,9 @@ def main(p):
     # new chart opens fitted even after zooming in the previous one
     set_zoom(page, 5)
     time.sleep(0.3)
-    page.get_by_role("button", name=re.compile("Create My Crochet Grid")).click()
+    page.get_by_role("button", name=re.compile("Create My Crochet Grid")).click(); time.sleep(0.4)
+    if page.locator("dialog.discard[open]").count():  # Stage 4C: a chart with hand edits asks before it is replaced
+        page.get_by_role("button", name="Discard edits and continue").click()
     page.wait_for_function("document.querySelector('.chart__zoom input') && true"); time.sleep(2.5)
     page.wait_for_selector("[data-testid=chart-canvas]", state="visible")
     check_whole(page, "a newly created chart opens fitted", 96, 144)

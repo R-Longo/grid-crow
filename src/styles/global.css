@@ -1027,6 +1027,28 @@ legend {
   gap: var(--space-2);
 }
 
+/* "Replace your edited chart?" : a native modal dialog, centered, over a dimmed page. */
+.discard {
+  width: min(24rem, calc(100vw - 2rem));
+  padding: var(--space-4);
+  border: 1px solid var(--selected-border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.discard::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.discard .chart__dialog-actions {
+  flex-direction: column;
+}
+
+.discard .chart__small {
+  width: 100%;
+}
+
 .chart__status:focus-visible {
   outline: 3px solid var(--focus-ring);
   outline-offset: 3px;

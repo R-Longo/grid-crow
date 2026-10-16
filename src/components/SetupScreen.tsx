@@ -7,10 +7,12 @@ import { convertInBackground } from "../engine/convert/run";
 import { ConversionError } from "../engine/convert/types";
 import type { CropState, StitchMatrix } from "../engine/convert/types";
 import { buildGridSpec } from "../engine/geometry";
+import { useDiscardGuard } from "../state/useDiscardGuard";
 import { settingsReducer } from "../state/setupSettings";
 import type { SettingsAction } from "../state/setupSettings";
 import type { SetupSettings } from "../types";
 import { ChartView } from "./ChartView";
+import { ConfirmDiscard } from "./ConfirmDiscard";
 import { CropPreview } from "./CropPreview";
 import { Icon } from "./Icon";
 import { OptionGroup } from "./OptionGroup";
@@ -27,6 +29,10 @@ export function SetupScreen() {
   const [result, setResult] = useState<{ matrix: StitchMatrix; crop: CropState; aspect: number } | null>(null);
   const [runError, setRunError] = useState<string | null>(null);
   const requestId = useRef(0);
+  // How many stitches the person has hand-edited in the chart on screen (reported by the chart). While it is above zero,
+  // anything that would replace the chart asks first, and closing the tab asks too.
+  const [edited, setEdited] = useState(0);
+  const guard = useDiscardGuard(edited);
 
   // Anything the chart depends on changing makes an old result stale, so it is cleared.
   const invalidate = useCallback(() => {
@@ -36,9 +42,16 @@ export function SetupScreen() {
     setStatus("idle");
   }, []);
 
+  const WHAT: Record<keyof SetupSettings, string> = {
+    orientation: "Changing the orientation",
+    sizeId: "Changing the size",
+    maxColors: "Changing the maximum colors",
+  };
   const update = <K extends keyof SetupSettings>(key: K, value: SetupSettings[K]) => {
-    invalidate();
-    dispatch({ key, value } as SettingsAction);
+    guard.request(WHAT[key], () => {
+      invalidate();
+      dispatch({ key, value } as SettingsAction);
+    });
   };
 
   // One GridSpec, calculated from gauge, is derived from the current selections on every
@@ -74,10 +87,12 @@ export function SetupScreen() {
   }, [file]);
 
   const chooseFile = (f: File | null) => {
-    invalidate();
-    setUploadError(null);
-    setCrop(DEFAULT_CROP);
-    setFile(f);
+    guard.request(f ? "Changing the picture" : "Removing the picture", () => {
+      invalidate();
+      setUploadError(null);
+      setCrop(DEFAULT_CROP);
+      setFile(f);
+    });
   };
 
   const create = async () => {
@@ -112,8 +127,10 @@ export function SetupScreen() {
               aspect={aspect}
               crop={crop}
               onChange={(c) => {
-                invalidate();
-                setCrop(c);
+                guard.request("Changing the crop", () => {
+                  invalidate();
+                  setCrop(c);
+                });
               }}
             />
           ) : (
@@ -157,7 +174,7 @@ export function SetupScreen() {
           type="button"
           className="btn btn--primary"
           disabled={!image || status === "working"}
-          onClick={create}
+          onClick={() => guard.request("Building a new grid", create)}
         >
           {status === "working" ? "Building your grid…" : "Create My Crochet Grid"}
           <Icon name="arrow" size={20} />
@@ -173,7 +190,22 @@ export function SetupScreen() {
       </div>
 
       {result && (
-        <ChartView matrix={result.matrix} image={image} crop={result.crop} aspect={result.aspect} />
+        <ChartView
+          matrix={result.matrix}
+          image={image}
+          crop={result.crop}
+          aspect={result.aspect}
+          onEditedChange={setEdited}
+        />
+      )}
+
+      {guard.pending && (
+        <ConfirmDiscard
+          changed={edited}
+          what={guard.pending.what}
+          onConfirm={guard.confirm}
+          onCancel={guard.cancel}
+        />
       )}
     </main>
   );

@@ -2,7 +2,7 @@
 
 Turn pictures into tapestry crochet grids. Free, private, runs entirely in the browser.
 
-**Current status (October 2026): Stages 1-3 approved; Stage 4A (editable stitch canvas) is approved; Stage 4B (fill, eyedropper, undo/redo) is built and awaiting review; not deployed.** Earlier: Stage 1 complete, plus the Stage 2 gauge/size calculations (setup screen, PWA config, standard worsted gauge, six finished sizes, stitch-grid math).
+**Current status (October 2026): Stages 1-3 approved; Stage 4A (editable stitch canvas) is approved; Stage 4B (fill, eyedropper, undo/redo) is approved and deployed from GitHub; Stage 4C (unsaved-edit protection, reliability tests) is built and awaiting review. Stage 5 is export only (a flat grid image; no saving or re-importing).** Earlier: Stage 1 complete, plus the Stage 2 gauge/size calculations (setup screen, PWA config, standard worsted gauge, six finished sizes, stitch-grid math).
 The "Create My Crochet Grid" button is intentionally not connected yet.
 
 **V1 uses one standard gauge:** worsted weight #4, 5 mm hook, 16 stitches × 18 rows = 4 inches. There is no yarn, hook, or proportion selector.

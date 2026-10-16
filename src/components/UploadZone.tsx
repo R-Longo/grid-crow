@@ -50,7 +50,12 @@ export function UploadZone({ file, onFileChange, preview, externalError }: Uploa
         className="visually-hidden"
         tabIndex={-1}
         aria-hidden="true"
-        onChange={(e) => accept(e.target.files?.[0])}
+        onChange={(e) => {
+          accept(e.target.files?.[0]);
+          // Forget the choice so picking the same file again still counts as a change. That matters when a
+          // "replace your edited chart?" question was answered "Keep editing" and the person tries again.
+          e.target.value = "";
+        }}
       />
 
       {file ? (

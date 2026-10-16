@@ -1,6 +1,6 @@
 # Stage 4 plan: the stitch editor
 
-Status: **4A approved and built. 4B (fill, eyedropper, undo/redo) built and awaiting review. 4C not started.**
+Status: **4A and 4B approved and built. 4C (reliability and unsaved-edit protection) built and awaiting review. Stage 5 is export only.**
 Rules carried over: the production converter (`src/engine/convert/`) is frozen; the 139 existing tests must keep passing;
 the experimental line-art / hybrid / simplification code stays in `src/engine/research/` and is not used; the visual design
 stays as approved except for controls the editor genuinely needs (listed below); no new libraries; no deployment before review.
@@ -112,7 +112,11 @@ A second finger landing during a stroke **cancels that stroke and undoes any sti
 6. **Phones:** at zoom 1 a 24x32 chart is about 3.5 px per stitch on a phone, so precise touch editing needs zoom. I plan a short hint. Is phone editing a must-have for first review, or is a tablet / computer enough?
 
 ## 7. Backlog (not Stage 4)
-Detail-density warning at setup; Illustration / Line-art mode (see `docs/research/README.md`); saving, reopening and export (Stage 5); symmetry painting, region move, stamps.
+Detail-density warning at setup; Illustration / Line-art mode (see `docs/research/README.md`); symmetry painting, region move, stamps.
+
+**Scope decision (October 2026): Stage 5 is export only.** A downloaded grid is a flat image and that is the end of it. There is
+no project file, no saving, no re-importing and no re-editing, so no storage and no file format to design. Edits live only while
+the page is open, which is why 4C protects them.
 
 ## 8. Usability fix after 4B: Fit to Screen
 The chart used to open at the width of the panel with a fixed 28rem-high scroll box, so tall charts needed scrolling both ways. Now:
@@ -128,3 +132,23 @@ The chart used to open at the width of the panel with a fixed 28rem-high scroll 
 - **Phone held sideways (short and wide):** the dock becomes a column to the right of the chart (colors in a grid, tools in a 3 x 2 grid), so the chart is still shown whole.
 - The chart section may be wider than the 32 rem form column from 40 rem up. Pan is now one of the four tools; choosing another tool returns to drawing. "Pick color" is labelled Eyedropper. Controls are at least 48 px tall.
 - No conversion, matrix, palette or editing-behavior code changed. Decorative art from the mockup (botanical frames, stepper) was not added.
+
+## 10. Stage 4C built (reliability and unsaved-edit protection)
+**Protection.** `ChartView` reports how many stitches differ from the converted chart (`onEditedChange`). While that is above zero:
+- Anything that would replace the chart asks first, in a small in-app dialog ("Replace your edited chart?", `ConfirmDiscard.tsx`, a native modal `<dialog>`):
+  changing the picture, the crop, the orientation, the size or the maximum colors, and pressing Create My Crochet Grid again. It names the action
+  and the number of edited stitches, opens with focus on **Keep editing**, Escape and clicking outside both keep the edits, and the page behind cannot be used.
+  Reset to converted keeps its own existing confirmation.
+- Closing or reloading the tab shows the browser's own "Leave this page?" prompt (browsers do not allow custom wording; some phones skip it when a tab is swiped away).
+- If undo has removed every edit, nothing is lost, so nothing is asked. Once export exists (Stage 5), the warning can also stay quiet after a download.
+- The decision logic is pure (`src/state/discardGuard.ts`, 8 tests); the React wiring is `useDiscardGuard.ts`.
+- Found and fixed while testing: after answering "Keep editing" to a new-picture question, choosing the same file again did nothing (the file input still held it). The input is now cleared after each choice.
+
+**Reliability tests.** `stress.test.ts` (16): twelve random 250-action sessions checked against a snapshot model after every step, including cancelled strokes and
+the eyedropper, undo all the way back to the exact converted chart and redo all the way forward again; reset; and both history limits (500 actions, 1,000,000
+stitches) shown to trim the oldest actions only, with the undo chain still exact. Mutation-checked: deliberately breaking undo, and the stitch budget, makes them fail.
+
+**Performance** (`perf.test.ts`, 96 x 144 and 128 x 108, Node): a 3,000-move stroke 9-65 ms, whole-chart fill 3-11 ms, undo or redo of it 0.4-3 ms, 500 mixed actions 0.2-0.3 s,
+undoing all of them 50-65 ms. In Chromium on the build machine, fill, undo and redo each show on screen in 85-108 ms (including the test driver's click latency). A phone will be slower; it has not been measured on a real phone.
+
+**Browser checks.** `scripts/e2e/stage4c_browser.py`: the full confirmation flow on desktop and on an emulated phone (27 checks each), plus a speed check.
