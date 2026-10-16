@@ -4,7 +4,7 @@
    - Network-first for page navigations, falling back to the cached shell.
    Bump CACHE_VERSION to force clients to refresh their cache. */
 
-const CACHE_VERSION = "v19";
+const CACHE_VERSION = "v21";
 const CACHE_NAME = `gridcrow-${CACHE_VERSION}`;
 const APP_SHELL = [
   "/",

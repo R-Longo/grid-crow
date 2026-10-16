@@ -21,6 +21,7 @@ export type IconName =
   | "plus"
   | "minus"
   | "options"
+  | "download"
   | "help"
   | "close"
   | "check"
@@ -89,6 +90,7 @@ const PATHS: Record<string, ReactNode> = {
   plus: <path d="M12 5v14M5 12h14" />,
   minus: <path d="M5 12h14" />,
   options: <path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 4v6M6 14v6" />,
+  download: <path d="M12 4v11M7.500 10.500L12 15l4.500-4.500M5 19h14" />,
   help: (
     <>
       <circle cx="12" cy="12" r="9" />

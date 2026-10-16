@@ -25,6 +25,12 @@ import { drawChart, drawStitches } from "./chartPaint";
 import { Icon } from "./Icon";
 import type { IconName } from "./Icon";
 import { ConfirmReset } from "./ConfirmReset";
+import { DownloadPanel } from "./DownloadPanel";
+import type { DownloadChoices, DownloadNote } from "./DownloadPanel";
+import { buildPatternModel, patternFileName } from "../engine/export/pattern";
+import { downloadBlob, renderPatternPng } from "../lib/exportPng";
+import { renderPatternPdf } from "../lib/exportPdf";
+import { tiledPageCount } from "../engine/export/pdf/tiled";
 
 /** Phones and narrow tablets get the compact editor: header, chart, then a bottom dock with the tools and yarn colors. */
 const COMPACT_QUERY = "(max-width: 56.24rem)";
@@ -84,6 +90,19 @@ export function ChartView({ matrix: converted, image, crop, aspect, onEditedChan
   const [optionsOpen, setOptionsOpen] = useState(false);
   const optionsBtnRef = useRef<HTMLButtonElement>(null);
   const optionsRef = useRef<HTMLDivElement>(null);
+  // Phones keep the download buttons in a "Download" panel next to Options (wide screens show them in the sidebar).
+  const [downloadOpen, setDownloadOpen] = useState(false);
+  const downloadBtnRef = useRef<HTMLButtonElement>(null);
+  const downloadRef = useRef<HTMLDivElement>(null);
+  const downloadId = useId();
+  const [exporting, setExporting] = useState<"png" | "pdf" | null>(null);
+  // PNG: clean color blocks unless asked. PDF: letters on (they help on a black-and-white print), one page, no tiling unless chosen.
+  const [downloadChoices, setDownloadChoices] = useState<DownloadChoices>({
+    pngLetters: false,
+    pdfLayout: "fit",
+    pdfLetters: true,
+  });
+  const [exportNote, setExportNote] = useState<DownloadNote | null>(null);
   const sectionRef = useRef<HTMLElement>(null);
   const [lines, setLines] = useState(true);
   const [width, setWidth] = useState(0);
@@ -132,6 +151,7 @@ export function ChartView({ matrix: converted, image, crop, aspect, onEditedChan
   // A new conversion replaces the chart being edited.
   useEffect(() => {
     setMatrix(converted);
+    setExportNote(null);
     setChanged(0);
     setConfirmReset(false);
     setFitted(true); // a new chart always opens showing the whole thing
@@ -467,18 +487,22 @@ export function ChartView({ matrix: converted, image, crop, aspect, onEditedChan
     sectionRef.current?.scrollIntoView({ block: "start" });
   }, [converted, pxH]);
 
-  // The Options panel (phones) closes with Escape or a tap outside it.
+  // The Options and Download panels (phones) close with Escape or a tap outside them.
+  const panelOpen = optionsOpen || downloadOpen;
   useEffect(() => {
-    if (!optionsOpen) return;
+    if (!panelOpen) return;
     const onDown = (e: PointerEvent) => {
       const t = e.target as Node;
-      if (optionsRef.current?.contains(t) || optionsBtnRef.current?.contains(t)) return;
+      const inside = [optionsRef, optionsBtnRef, downloadRef, downloadBtnRef].some((r) => r.current?.contains(t));
+      if (inside) return;
       setOptionsOpen(false);
+      setDownloadOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape" || confirmRef.current) return;
+      (optionsOpen ? optionsBtnRef : downloadBtnRef).current?.focus();
       setOptionsOpen(false);
-      optionsBtnRef.current?.focus();
+      setDownloadOpen(false);
     };
     document.addEventListener("pointerdown", onDown);
     document.addEventListener("keydown", onKey);
@@ -486,10 +510,52 @@ export function ChartView({ matrix: converted, image, crop, aspect, onEditedChan
       document.removeEventListener("pointerdown", onDown);
       document.removeEventListener("keydown", onKey);
     };
-  }, [optionsOpen]);
+  }, [panelOpen, optionsOpen]);
   useEffect(() => {
-    if (!compact) setOptionsOpen(false);
+    if (!compact) {
+      setOptionsOpen(false);
+      setDownloadOpen(false);
+    }
   }, [compact]);
+
+  // Download the chart as it is RIGHT NOW (the session's matrix is the single source of truth), never the picture or a screenshot.
+  const exportPng = async () => {
+    if (exporting) return;
+    setExporting("png");
+    setExportNote(null);
+    try {
+      const model = buildPatternModel(sessionRef.current!.matrix);
+      const name = patternFileName(model, "png");
+      const blob = await renderPatternPng(model, { letters: downloadChoices.pngLetters });
+      if (!downloadBlob(blob, name)) throw new Error("The browser did not start the download.");
+      setExportNote({ kind: "ok", text: `Downloaded ${name}` });
+    } catch (e) {
+      setExportNote({ kind: "error", text: e instanceof Error ? e.message : "Something went wrong making the PNG." });
+    } finally {
+      setExporting(null);
+    }
+  };
+
+  const exportPdf = async () => {
+    if (exporting) return;
+    setExporting("pdf");
+    setExportNote(null);
+    try {
+      const model = buildPatternModel(sessionRef.current!.matrix);
+      const tiled = downloadChoices.pdfLayout === "tiled";
+      const name = patternFileName(model, "pdf", tiled ? "large-print" : "");
+      const blob = await renderPatternPdf(model, {
+        layout: downloadChoices.pdfLayout,
+        letters: downloadChoices.pdfLetters,
+      });
+      if (!downloadBlob(blob, name)) throw new Error("The browser did not start the download.");
+      setExportNote({ kind: "ok", text: `Downloaded ${name}` });
+    } catch (e) {
+      setExportNote({ kind: "error", text: e instanceof Error ? e.message : "Something went wrong making the PDF." });
+    } finally {
+      setExporting(null);
+    }
+  };
 
   const chooseColor = (i: number) => {
     sessionRef.current!.setActive(i);
@@ -774,11 +840,48 @@ export function ChartView({ matrix: converted, image, crop, aspect, onEditedChan
             className="chart__small"
             aria-expanded={optionsOpen}
             aria-controls={optionsId}
-            onClick={() => setOptionsOpen((o) => !o)}
+            onClick={() => {
+              setDownloadOpen(false);
+              setOptionsOpen((o) => !o);
+            }}
           >
             <Icon name="options" size={18} />
             Options
           </button>
+          <button
+            ref={downloadBtnRef}
+            type="button"
+            className="chart__small"
+            aria-expanded={downloadOpen}
+            aria-controls={downloadId}
+            data-testid="download-open"
+            onClick={() => {
+              setOptionsOpen(false);
+              setDownloadOpen((o) => !o);
+            }}
+          >
+            <Icon name="download" size={18} />
+            Download
+          </button>
+          {downloadOpen && (
+            <div
+              ref={downloadRef}
+              id={downloadId}
+              className="chart__options"
+              role="region"
+              aria-label="Download your pattern"
+            >
+              <DownloadPanel
+                onPng={exportPng}
+                onPdf={exportPdf}
+                busy={exporting}
+                note={exportNote}
+                choices={downloadChoices}
+                onChoices={setDownloadChoices}
+                tiledPages={tiledPageCount(matrix.cols, matrix.rows)}
+              />
+            </div>
+          )}
           {optionsOpen && (
             <div ref={optionsRef} id={optionsId} className="chart__options" role="region" aria-label="Chart options">
               <p className="chart__summary">{summary}</p>
@@ -854,6 +957,20 @@ export function ChartView({ matrix: converted, image, crop, aspect, onEditedChan
               Yarn colors
             </h3>
             {palette}
+          </div>
+          <div className="chart__downloads">
+            <h3 className="chart__heading" id={downloadId}>
+              Download
+            </h3>
+            <DownloadPanel
+              onPng={exportPng}
+              onPdf={exportPdf}
+              busy={exporting}
+              note={exportNote}
+              choices={downloadChoices}
+              onChoices={setDownloadChoices}
+              tiledPages={tiledPageCount(matrix.cols, matrix.rows)}
+            />
           </div>
           <div className="chart__edit">{utility}</div>
           <p className="chart__help" data-testid="chart-help">

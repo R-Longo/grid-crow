@@ -152,3 +152,22 @@ stitches) shown to trim the oldest actions only, with the undo chain still exact
 undoing all of them 50-65 ms. In Chromium on the build machine, fill, undo and redo each show on screen in 85-108 ms (including the test driver's click latency). A phone will be slower; it has not been measured on a real phone.
 
 **Browser checks.** `scripts/e2e/stage4c_browser.py`: the full confirmation flow on desktop and on an emulated phone (27 checks each), plus a speed check.
+
+## 11. Stage 5A built (PNG export)
+
+Scope: Stage 5 is export only (no saving, accounts or library). Digital-first: the PNG is the everyday export.
+- `src/engine/export/pattern.ts`: pure pattern model (letters A, B, C in palette order, exact counts, finished inches, wording).
+- `src/engine/export/png.ts`: pure layout and drawing against a tiny `Ctx2D`, so it is tested with a recording fake.
+  Cell size is chosen under a 12,000,000-pixel budget (96 x 144 gives 27 x 24 px cells). Letters are printed in every
+  stitch for black-and-white and color-blind use (`showLetters`).
+- `src/lib/exportPng.ts`: off-screen canvas, `toBlob`, anchor download. `DownloadPanel` + a Download button in the phone bar and the desktop sidebar.
+- Exports the live edited matrix, never a screenshot. Converter untouched. Service worker cache v20.
+
+## 12. Stage 5B built (PDF export)
+
+Digital-first: the PNG stays the simplest download; the PDF is the flexible one (read on screen or print). Tiled printing is optional and its help only appears when "Large print, tiled pages" is chosen.
+- `src/engine/export/pdf/`: a hand-written vector PDF writer (Helvetica base-14 fonts, no images, no compression, deterministic bytes); the drawing is a list of plain instructions (`ops.ts`) that tests read directly.
+- Fit to one page: whole chart on one US Letter page (portrait or landscape, whichever gives bigger stitches), key under it when it costs the chart under 10%, otherwise on page 2. Letters in stitches are printed only when stitches are tall enough to read (8.5 pt); otherwise a note says so.
+- Large print: pages hold at most 27 x 38 stitches at the real gauge (18 x 16 pt per stitch), split into the fewest, most even parts, always between stitches. Page 1 is the overview (steps, assembly picture with page numbers and stitch ranges, color key). Each chart page: bold 3 pt alignment line on the edges that join, registration ticks at every 5th stitch line on both pages, "Joins page N" beside each joining edge, global column and row ranges, "you are here" mini map. No stitch is ever printed twice; the pages are trimmed along the bold line and butted together.
+- Letters: PNG off by default, PDF on by default (both optional); the legend always has the letters.
+- Tests: `pdf/pdf.test.ts` (52) plus `scripts/e2e/stage5b_browser.py` (reads the real downloaded PDFs with qpdf, pdftotext, pdftoppm). Service worker cache v21.

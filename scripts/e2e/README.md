@@ -6,3 +6,9 @@ hover numbering, fast drags, Pan mode and Space-drag, Ctrl+wheel zoom anchoring,
 
 Needs: `npx vite --port 5173 --host 127.0.0.1` running, Playwright for Python with Chromium, and a PNG of the sun card
 (`IMG` at the top of the script). It is emulated touch, not a real phone.
+
+Stage 5: `stage5_browser.py desktop|mobile` downloads the real PNG and reads it back with Pillow and the `tesseract` CLI
+(every stitch compared with the edited chart on screen, legend, numbering, row 1 at the bottom). `layout_probe.ts`
+prints the PNG layout for a chart size: `npx vite-node scripts/e2e/layout_probe.ts 96 144 10`.
+
+Stage 5B: `stage5b_browser.py desktop|mobile` downloads the real PDFs (Fit to one page and Large print) and checks them with `qpdf`, `pdftotext` and `pdftoppm`: every stitch against the edited chart on screen, page count, global ranges, joining lines and ticks. `pdf_probe.ts` prints where the PDF puts the chart on each page; `make_pdf.ts` writes a sample PDF from a synthetic chart.

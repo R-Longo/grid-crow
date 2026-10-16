@@ -993,6 +993,19 @@ legend {
 }
 
 
+/* The main action in a panel: the same deepened terracotta as "Create My Crochet Grid". */
+.chart__small--primary {
+  border-color: var(--cta);
+  background: var(--cta);
+  color: var(--cta-text);
+  font-weight: 700;
+}
+
+.chart__small--primary:hover:not(:disabled) {
+  border-color: var(--cta-hover);
+  background: var(--cta-hover);
+}
+
 .chart__small--danger {
   border-color: var(--selected-border);
   background: var(--selected-bg);
@@ -1024,6 +1037,87 @@ legend {
 .chart__dialog-actions {
   display: flex;
   flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* Download panel */
+.download {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.download__text {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.chart .download__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.download__check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  font-size: 0.9rem;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.download__check input {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  accent-color: var(--terracotta);
+}
+
+.download__pdf {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: var(--space-2) 0 0;
+  padding: var(--space-3) 0 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+  min-width: 0;
+}
+
+.download__legend {
+  padding: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.download__tiled {
+  padding: var(--space-2) var(--space-3);
+  border-left: 3px solid var(--terracotta);
+  background: var(--control);
+}
+
+.download__note {
+  margin: 0;
+  min-height: 1.2em;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+.download__note--error {
+  color: var(--danger);
+}
+
+.chart__downloads {
+  display: flex;
+  flex-direction: column;
   gap: var(--space-2);
 }
 
