@@ -1,0 +1,1588 @@
+@import "./tokens.css";
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.5;
+  background: var(--bg) radial-gradient(ellipse 80% 40% at 50% 0%, var(--bg-glow) 0%, transparent 70%) no-repeat;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- Layout ---------- */
+
+.app {
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: var(--space-4);
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.4);
+}
+
+.fields {
+  display: grid;
+  gap: var(--space-4);
+  margin-top: var(--space-5);
+}
+
+/* ---------- Header ---------- */
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+  position: relative;
+}
+
+/* Divider row: gold rule + sparkle on each side of the centered How-To pill */
+.header__bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+.header__rule {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.header__rule::before {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--antique-gold));
+  opacity: 0.7;
+}
+
+.header__rule--right {
+  flex-direction: row-reverse;
+}
+
+.header__rule--right::before {
+  background: linear-gradient(to left, transparent, var(--antique-gold));
+}
+
+.header__sparkle {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  fill: var(--antique-gold);
+}
+
+.howto__chevron {
+  transition: transform 0.15s;
+}
+
+.howto__toggle[aria-expanded="true"] .howto__chevron {
+  transform: rotate(90deg);
+}
+
+.brand {
+  margin: 0;
+  line-height: 0;
+}
+
+.brand__logo {
+  display: block;
+  width: 80%;
+  height: auto;
+  margin: 0 auto;
+}
+
+/* ---------- How-To ---------- */
+
+.howto {
+  flex: none;
+  align-self: flex-start;
+}
+
+.howto__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 40px;
+  padding: 0 var(--space-4);
+  background: var(--cta); /* #B96C63 */
+  border: 1px solid var(--cta);
+  border-radius: 999px;
+  color: var(--cta-text); /* #17191B */
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.howto__toggle:hover {
+  background: var(--cta-hover);
+  border-color: var(--cta-hover);
+}
+
+.howto__toggle[aria-expanded="true"] {
+  background: var(--cta-hover);
+  border-color: var(--cta-hover);
+}
+
+.howto__toggle:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+.howto__panel {
+  position: absolute;
+  z-index: 20;
+  left: 0;
+  right: 0;
+  top: calc(100% + var(--space-2));
+  max-height: min(85vh, 50rem);
+  overflow-y: auto;
+  padding: var(--space-4) var(--space-5) var(--space-5);
+  background: #1f1d22;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.6);
+}
+
+.howto__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+}
+
+.howto__head h2 {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.howto__close {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-right: calc(var(--space-2) * -1);
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.howto__close:hover {
+  background: var(--selected-bg);
+}
+
+.howto__steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.howto__steps > li {
+  display: flex;
+  gap: var(--space-4);
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--border);
+}
+
+.howto__icon {
+  flex: none;
+  width: 36px;
+  display: grid;
+  place-items: center;
+  color: var(--terracotta);
+}
+
+.howto__content {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Informational size labels (not interactive): two rows of three */
+.howto__sizes {
+  list-style: none;
+  margin: var(--space-2) 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.howto__sizes li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 0 5px;
+  text-align: center;
+  white-space: nowrap;
+  font-size: 0.85rem;
+  line-height: 1.3;
+  color: var(--text);
+  background: var(--selected-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: default;
+  user-select: none;
+}
+
+/* Crow + tapestry picture inside each size label */
+.size-art {
+  display: block;
+  width: 100%;
+  max-width: 76px;
+  height: auto;
+}
+
+.size-art__tapestry {
+  fill: var(--tapestry-fill);
+  stroke: var(--tapestry-stroke);
+}
+
+/* Phones: keep all six labels inside the modal */
+@media (max-width: 26rem) {
+  .howto__size-label {
+    font-size: 0.82rem;
+  }
+}
+
+/* Smallest phones (about 350 px and under): reclaim a little room */
+@media (max-width: 22rem) {
+  .howto__panel {
+    padding-left: var(--space-3);
+    padding-right: var(--space-3);
+  }
+  .howto__steps > li {
+    gap: var(--space-3);
+  }
+  .howto__icon {
+    width: 28px;
+  }
+}
+
+.howto__step-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 600;
+}
+
+.howto__num {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--selected-bg);
+  font-size: 0.75rem;
+}
+
+.howto__step-body {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+.howto__note {
+  margin: var(--space-3) 0 0;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.howto__note-detail {
+  display: block;
+  margin-top: var(--space-1);
+}
+
+.howto__note strong {
+  color: var(--text);
+}
+
+/* ---------- Upload ---------- */
+
+.upload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  border: 2px dashed #7d5651;
+  border-radius: var(--radius-md);
+  background: var(--control);
+  /* thin outer ring, as in the home-screen mockup */
+  margin: 7px;
+  box-shadow: 0 0 0 6px var(--control), 0 0 0 7px var(--border-strong);
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.upload--active {
+  border-color: var(--accent);
+  background: var(--selected-bg);
+}
+
+.upload .btn {
+  background: #2a1c1c;
+  border-color: var(--terracotta);
+  color: var(--text);
+}
+
+.upload .btn:hover {
+  background: var(--selected-bg);
+}
+
+.upload__icon {
+  color: var(--warm-cream);
+  display: grid;
+}
+
+.upload__prompt {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+}
+
+.upload__formats {
+  margin: 0 0 var(--space-2);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.upload__error {
+  margin: var(--space-3) 0 0;
+  color: var(--danger);
+  font-size: 0.9rem;
+}
+
+.preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--control);
+}
+
+.preview__img {
+  max-width: 100%;
+  max-height: 18rem;
+  border-radius: var(--radius-sm);
+}
+
+.preview__meta {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  word-break: break-all;
+  text-align: center;
+}
+
+.preview__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: center;
+}
+
+.privacy-note {
+  margin: var(--space-3) 0 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* ---------- Option groups ---------- */
+
+fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+legend {
+  padding: 0;
+  margin-bottom: var(--space-2);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.options {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), 1fr);
+  gap: var(--space-2);
+  align-items: stretch;
+}
+
+.options__lead {
+  display: grid;
+  place-items: center;
+  color: var(--terracotta);
+  padding-right: var(--space-1);
+}
+
+/* Colors row has a palette icon in front of the four choices */
+.options:has(.options__lead) {
+  grid-template-columns: auto repeat(var(--cols), 1fr);
+}
+
+.option {
+  position: relative;
+  display: block;
+}
+
+.option input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.option__face {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--tap-target);
+  height: 100%;
+  padding: var(--space-2) var(--space-3);
+  background: var(--control);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  pointer-events: none;
+}
+
+.option input:hover + .option__face {
+  border-color: var(--border-strong);
+}
+
+.option input:checked + .option__face {
+  background: var(--selected-bg);
+  border-color: var(--selected-border);
+}
+
+.option input:focus-visible + .option__face {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.option__icon {
+  flex: none;
+  display: grid;
+  color: var(--text-muted);
+}
+
+.option input:checked + .option__face .option__icon:not([style]) {
+  color: var(--terracotta);
+}
+
+.option__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.2;
+  margin-right: auto;
+}
+
+.option__hint {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.option__radio {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-strong);
+  color: var(--selected-bg);
+}
+
+.option input:checked + .option__face .option__radio {
+  background: var(--terracotta);
+  border-color: var(--terracotta);
+  color: var(--raven-black);
+}
+
+/* Tight layouts: stack label under icon so three/four-up rows never overflow */
+@media (max-width: 26rem) {
+  .panel {
+    padding: var(--space-4);
+  }
+  .option__face {
+    padding: var(--space-2);
+    gap: 6px;
+  }
+  .option__label {
+    font-size: 0.95rem;
+  }
+  .options[style*="--cols: 3"] .option__face {
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    padding: var(--space-2);
+  }
+  .options[style*="--cols: 3"] .option__text {
+    margin-right: 0;
+    align-items: center;
+  }
+  .options[style*="--cols: 3"] .option__radio {
+    display: none;
+  }
+  .options[style*="--cols: 4"] .option__radio {
+    display: none;
+  }
+  .options[style*="--cols: 4"] .option__face {
+    justify-content: center;
+  }
+  .options[style*="--cols: 4"] .option__text {
+    margin-right: 0;
+  }
+}
+
+/* ---------- Size summary ---------- */
+
+.size-summary {
+  margin-top: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--control);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+}
+
+.size-summary dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-1) var(--space-4);
+}
+
+.size-summary dt {
+  color: var(--text-muted);
+}
+
+.size-summary dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+}
+
+.size-summary__note {
+  display: flex;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.size-summary__icon {
+  flex: none;
+  color: var(--terracotta);
+  display: grid;
+  align-self: flex-start;
+}
+
+/* ---------- Buttons ---------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: 0 var(--space-5);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn:hover {
+  background: var(--selected-bg);
+}
+
+.btn--quiet {
+  border-color: transparent;
+  color: var(--text-muted);
+}
+
+.btn--primary {
+  width: 100%;
+  min-height: 54px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  background: var(--cta);
+  border-color: var(--cta);
+  color: var(--cta-text);
+}
+
+.btn--primary:hover:not(:disabled) {
+  background: var(--cta-hover);
+  border-color: var(--cta-hover);
+}
+
+.btn--primary:focus-visible {
+  outline: 3px solid var(--antique-gold);
+  outline-offset: 3px;
+}
+
+/* Not yet available (no image): still terracotta, just quieter. Not clickable. */
+.btn--primary:disabled,
+.btn--primary:disabled:hover {
+  background: var(--cta-disabled);
+  border-color: var(--cta-disabled);
+  color: var(--cta-text);
+  cursor: not-allowed;
+}
+
+.cta {
+  margin-top: var(--space-5);
+}
+
+.cta-hint,
+.made-for {
+  margin: var(--space-3) 0 0;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.stage-note {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--olive);
+  background: rgba(107, 111, 69, 0.18);
+  font-size: 0.9rem;
+}
+
+.stage-note strong {
+  color: var(--sage);
+}
+
+/* Phones: let the logo use more of the width so the pixel tagline stays readable */
+@media (max-width: 26rem) {
+  .brand__logo {
+    width: 96%;
+  }
+}
+
+/* ---------- Crop and chart (Stage 3) ---------- */
+
+.crop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.crop__canvas {
+  display: block;
+  max-width: 100%;
+  border-radius: var(--radius-sm);
+  background: #fff;
+  cursor: grab;
+  touch-action: none;
+}
+
+.crop__canvas:active {
+  cursor: grabbing;
+}
+
+.crop__canvas:focus-visible,
+.chart__zoom input:focus-visible,
+.crop__controls input:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+.crop__controls,
+.chart__zoom {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  max-width: 20rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.crop__controls input,
+.chart__zoom input {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--terracotta);
+}
+
+.crop__hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.chart {
+  margin-top: var(--space-5);
+  padding: var(--space-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--control);
+}
+
+.chart__title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.chart__summary {
+  margin: var(--space-1) 0 var(--space-3);
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+
+.chart__toggle {
+  display: inline-flex;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.chart__toggle button {
+  min-height: var(--tap-target);
+  padding: 0 var(--space-4);
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.chart__toggle button[aria-pressed="true"] {
+  background: var(--selected-bg);
+  color: var(--warm-cream);
+  font-weight: 700;
+}
+
+.chart__toggle button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.chart__toggle button:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: -3px;
+}
+
+.chart__check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.chart__check input {
+  accent-color: var(--terracotta);
+  width: 18px;
+  height: 18px;
+}
+
+/* The chart is drawn at its true pixel size and scrolls inside this box when zoomed in. */
+.chart__scroll {
+  max-width: 100%;
+  margin: 0 auto;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--raven-black);
+}
+
+.chart__stage {
+  position: relative;
+  max-width: none;
+}
+
+.chart__canvas,
+.chart__lines {
+  display: block;
+  max-width: none;
+}
+
+.chart__lines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.chart__canvas[hidden],
+.chart__lines[hidden] {
+  display: none;
+}
+
+.chart__zoom {
+  margin: var(--space-3) 0;
+  max-width: 32rem;
+}
+
+.chart__zoom .chart__small {
+  white-space: nowrap;
+}
+
+
+
+.chart__swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.chart__count {
+  color: var(--text-muted);
+}
+
+
+/* ---------- Stitch editor (Stage 4A) ---------- */
+
+.chart__stage {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* While drawing or panning, the chart handles touches itself (one finger paints or pans, two fingers pan and zoom). */
+.chart__stage--draw,
+.chart__stage--pan {
+  touch-action: none;
+}
+
+.chart__stage--draw {
+  cursor: crosshair;
+}
+
+.chart__stage--pan {
+  cursor: grab;
+}
+
+.chart__stage--fill {
+  cursor: cell;
+}
+
+.chart__stage--pick {
+  cursor: copy;
+}
+
+.chart__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  margin: 0 0 var(--space-3);
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.chart__status > span:first-child {
+  flex: none;
+}
+
+.chart__status strong {
+  color: var(--text);
+}
+
+.chart__where {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+
+
+.chart__color[aria-pressed="true"] {
+  border-color: var(--terracotta);
+  background: var(--selected-bg);
+  color: var(--warm-cream);
+}
+
+.chart__color:focus-visible,
+.chart__small:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+
+.chart__small {
+  min-height: var(--tap-target);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.chart__small:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+
+.chart__small--danger {
+  border-color: var(--selected-border);
+  background: var(--selected-bg);
+  color: var(--warm-cream);
+}
+
+.chart__dialog {
+  flex: 1 1 100%;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--selected-border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.chart__dialog-title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.chart__dialog-text {
+  margin: var(--space-1) 0 var(--space-3);
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.chart__dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.chart__status:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+
+/* ---------- Editor layout (Stage 4 layout pass) ----------
+   One column on phones (tools, chart, zoom, colors, utilities). From 56rem: the chart on the left, tools / yarn colors /
+   utilities in a sidebar on the right. The chart section is allowed to be wider than the 32rem form column. */
+
+@media (min-width: 40rem) {
+  .chart {
+    width: min(72rem, calc(100vw - 3rem));
+    margin-left: 50%;
+    transform: translateX(-50%);
+  }
+}
+
+.chart__head {
+  margin-bottom: var(--space-3);
+}
+
+.chart__head .chart__summary {
+  margin-bottom: 0;
+}
+
+.chart__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+  grid-template-areas:
+    "view"
+    "tools"
+    "colors"
+    "main"
+    "zoom"
+    "utility"
+    "help";
+}
+
+/* On narrow screens the two wrappers disappear and their children are placed in the order above: the tools and the
+   yarn colors sit directly over the chart, so painting never needs scrolling away from it. */
+.chart__left,
+.chart__side {
+  display: contents;
+}
+
+.chart__viewbar {
+  grid-area: view;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.chart__tools {
+  grid-area: tools;
+}
+
+.chart__colors {
+  grid-area: colors;
+  min-width: 0;
+}
+
+.chart__main {
+  grid-area: main;
+  min-width: 0;
+}
+
+.chart__zoombar {
+  grid-area: zoom;
+}
+
+.chart__edit {
+  grid-area: utility;
+}
+
+.chart__help {
+  grid-area: help;
+}
+
+/* Desktop and wide tablets: the chart (about two thirds) beside a sidebar (about one third). Both columns stay in view while
+   the page scrolls, and the sidebar scrolls by itself if it is taller than the screen. */
+@media (min-width: 56.25rem) {
+  .chart__layout {
+    grid-template-columns: minmax(0, 2fr) minmax(19rem, 1fr);
+    column-gap: var(--space-5);
+    align-items: start;
+    grid-template-areas: "left side";
+  }
+  .chart__left,
+  .chart__side {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    position: sticky;
+    top: var(--space-3);
+    min-width: 0;
+  }
+  .chart__left {
+    grid-area: left;
+  }
+  .chart__side {
+    grid-area: side;
+    gap: var(--space-4);
+    max-height: calc(100vh - 2 * var(--space-3));
+    max-height: calc(100dvh - 2 * var(--space-3));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-right: 2px;
+  }
+}
+
+.chart__heading {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-serif);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* Tools: four equal buttons, icon over label. */
+.chart__toolgrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.chart__tool {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 64px;
+  padding: var(--space-2) 2px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.chart__tool[aria-pressed="true"] {
+  border-color: var(--terracotta);
+  background: var(--selected-bg);
+  color: var(--warm-cream);
+  font-weight: 700;
+}
+
+.chart__tool:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.chart__tool:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Undo and Redo: one pair, same width. */
+.chart__history {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.chart__history .chart__small,
+.chart__zoombar .chart__small {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border-radius: var(--radius-sm);
+}
+
+/* Yarn colors. Phones: one row of equal cells, swiped sideways, right above the chart. Desktop: a regular grid. */
+.chart__palette {
+  display: flex;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 2px 0 var(--space-1);
+  list-style: none;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+}
+
+.chart__palette li {
+  display: block;
+  flex: 0 0 4.75rem;
+  padding: 0;
+  border: 0;
+  scroll-snap-align: start;
+}
+
+@media (max-width: 56.24rem) {
+  /* The headings are for screen readers on phones; the controls speak for themselves. */
+  .chart__colors .chart__heading,
+  .chart__tools .chart__heading {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}
+
+@media (min-width: 56.25rem) {
+  .chart__palette {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(4.25rem, 1fr));
+    overflow: visible;
+    padding: 0;
+  }
+  .chart__palette li {
+    flex: none;
+  }
+}
+
+.chart__color {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 100%;
+  min-height: 4.75rem;
+  padding: var(--space-2) 2px;
+  background: transparent;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: inherit;
+  font: inherit;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.chart__color .chart__swatch {
+  width: 28px;
+  height: 28px;
+}
+
+.chart__color[aria-pressed="true"] {
+  border-color: var(--terracotta);
+  background: var(--selected-bg);
+  color: var(--warm-cream);
+}
+
+.chart__hex {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Zoom controls sit together under the chart. */
+.chart__zoombar {
+  max-width: none;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.chart__zoombar input {
+  flex: 1 1 4rem;
+  min-width: 0;
+}
+
+.chart__round {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap-target);
+  height: var(--tap-target);
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.chart__round:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.chart__round:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.chart__percent {
+  min-width: 3.2rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Utilities: set apart from the everyday tools. */
+.chart__edit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.chart__small--quiet {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  border-color: var(--border);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.chart__help {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+@media (max-width: 30rem) {
+  /* Phones: Fit to Screen on its own line, then the minus / slider / plus row. */
+  .chart__zoombar .chart__small {
+    flex: 1 1 100%;
+  }
+}
+
+/* ---------- Compact editor (phones and narrow tablets) ----------
+   Header with Fit to Screen and Options, then the chart, then a dock that stays at the bottom of the screen with the
+   yarn colors (one swipeable row) and the tools, Undo and Redo. Grid lines, the view toggle, zoom slider, Reset and the
+   help text live in the Options panel. */
+
+.chart--compact {
+  padding-bottom: 0;
+}
+
+.chart__bar {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.chart__bar .chart__title {
+  margin-right: auto;
+  font-size: 1.05rem;
+}
+
+.chart--compact .chart__small {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 var(--space-3);
+  font-size: 0.85rem;
+}
+
+.chart--compact .chart__status {
+  margin: var(--space-2) 0 0;
+  font-size: 0.8rem;
+}
+
+.chart--compact .chart__where {
+  font-size: 0.75rem;
+}
+
+.chart__options {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-height: 70vh;
+  max-height: 70dvh;
+  overflow-y: auto;
+  padding: var(--space-3);
+  border: 1px solid var(--selected-border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
+}
+
+.chart__options .chart__summary,
+.chart__options .chart__help {
+  margin: 0;
+}
+
+.chart__options-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+.chart__options .chart__edit {
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+}
+
+.chart__dock {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: var(--space-3) calc(-1 * var(--space-4)) 0;
+  padding: var(--space-2) var(--space-4) calc(var(--space-2) + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--border-strong);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  background: var(--control);
+}
+
+.chart--compact .chart__palette {
+  padding: 2px 0;
+}
+
+.chart--compact .chart__palette li {
+  flex: 0 0 3.6rem;
+}
+
+.chart--compact .chart__color {
+  min-height: 3.75rem;
+  padding: 4px 2px;
+  font-size: 0.62rem;
+}
+
+.chart--compact .chart__color .chart__swatch {
+  width: 26px;
+  height: 26px;
+}
+
+.chart--compact .chart__count {
+  display: none;
+}
+
+.chart__dockbar {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) 8px repeat(2, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.chart__dockbar .chart__tool,
+.chart__dockbar .chart__small {
+  flex-direction: column;
+  gap: 2px;
+  min-height: 56px;
+  padding: 4px 0;
+  border-radius: var(--radius-sm);
+  font-size: 0.62rem;
+}
+
+.chart__dockbar .chart__small {
+  display: flex;
+  border-color: var(--border-strong);
+}
+
+.chart__bar > .chart__small {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.chart--compact .chart__status {
+  flex-wrap: nowrap;
+  gap: var(--space-2);
+}
+
+.chart--compact .chart__current,
+.chart--compact .chart__where {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chart--compact .chart__swatch {
+  flex: none;
+  width: 18px;
+  height: 18px;
+}
+
+.chart__bar > .chart__small {
+  white-space: nowrap;
+}
+
+@media (max-width: 24rem) {
+  .chart__bar > .chart__small {
+    padding: 0 var(--space-2);
+    font-size: 0.8rem;
+  }
+  .chart__bar > .chart__small svg {
+    display: none;
+  }
+}
+
+/* A phone held sideways: chart on the left, the dock (colors and tools) in a column on the right. */
+@media (max-width: 56.24rem) and (max-height: 34rem) and (min-width: 36rem) {
+  .chart--side {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 17rem;
+    grid-template-rows: auto 1fr auto;
+    column-gap: var(--space-3);
+    padding-bottom: var(--space-3);
+  }
+  .chart--side .chart__bar {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .chart--side .chart__wrap {
+    grid-column: 1;
+    grid-row: 2;
+    min-width: 0;
+  }
+  .chart--side .chart__status {
+    grid-column: 1;
+    grid-row: 3;
+  }
+  .chart--side .chart__dock {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    position: static;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    max-height: calc(100vh - 2 * var(--space-3));
+    max-height: calc(100dvh - 2 * var(--space-3));
+    overflow-y: auto;
+  }
+  .chart--side .chart__palette {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    overflow: visible;
+  }
+  .chart--side .chart__palette li {
+    flex: none;
+  }
+  .chart--side .chart__dockbar {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .chart--side .chart__dockgap {
+    display: none;
+  }
+}
