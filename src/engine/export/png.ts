@@ -228,8 +228,9 @@ export function drawPng(ctx: Ctx2D, model: PatternModel, l: PngLayout): void {
   for (let c = 0; c <= cols; c++) ctx.fillRect(x0 + c * cellW - (c === cols ? 1 : 0), y0, 1, chartH);
   for (let r = 0; r <= rows; r++) ctx.fillRect(x0, y0 + r * cellH - (r === rows ? 1 : 0), chartW, 1);
 
-  // A heavier line after every 10th stitch and 10th row (counted from the left and from the bottom): a white edge under a black core.
-  for (let c = 10; c < cols; c += 10) {
+  // A heavier line after every 10th stitch and 10th row (counted from the right and from the bottom): a white edge under a black core.
+  for (let k = 10; k < cols; k += 10) {
+    const c = cols - k;
     ctx.fillStyle = "rgba(255,255,255,0.85)";
     ctx.fillRect(x0 + c * cellW - 2, y0, 4, chartH);
     ctx.fillStyle = INK;
@@ -250,11 +251,11 @@ export function drawPng(ctx: Ctx2D, model: PatternModel, l: PngLayout): void {
   ctx.fillRect(x0 - 2, y0 - 2, 2, chartH + 4);
   ctx.fillRect(x0 + chartW, y0 - 2, 2, chartH + 4);
 
-  // Numbers on all four sides: columns across the top and bottom (1 at the left), rows down both sides (1 at the bottom).
+  // Numbers on all four sides: columns across the top and bottom (1 at the right), rows down both sides (1 at the bottom).
   const sideX = Math.round(l.numberSize * 1.35);
   const sideY = Math.round(l.numberSize * 1.1);
   for (const n of labelNumbers(cols, l.labelStep)) {
-    const x = x0 + (n - 1) * cellW + cellW / 2;
+    const x = x0 + (cols - n) * cellW + cellW / 2;
     const bold = n % 10 === 0;
     for (const y of [y0 - sideY, y0 + chartH + sideY]) text(ctx, { text: String(n), x, y, size: l.numberSize, bold, color: MUTED, align: "center" });
   }

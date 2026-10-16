@@ -124,11 +124,11 @@ def verify_png(tag, path, before, after, pal):
     check(f"{tag}: total line says 13,824 stitches", "13,824" in total_txt.replace(" ", ""), total_txt.strip())
     sumcounts = sum(n for _, n in used)
     check(f"{tag}: on-screen counts add up to every stitch in the chart", sumcounts == COLS * ROWS, str(sumcounts))
-    # numbering: columns 1.. from the left along the top, row 1 at the bottom of the left edge
+    # numbering: stitch 1 at the RIGHT edge (counting 96 at the left) along the top, row 1 at the bottom of the left edge
     top = ocr(img, (L["x0"], L["y0"] - 56, L["x0"] + 4 * L["cellW"], L["y0"] - 8), 7, True).split()
-    check(f"{tag}: column numbers start at 1 and rise to the right", top[:4] == ["1", "2", "3", "4"] or "".join(top).startswith("1234"), str(top))
+    check(f"{tag}: column numbers start at 96 on the left and fall toward the right", "".join(top).startswith("96959493"), str(top))
     topright = ocr(img, (L["x0"] + (COLS - 3) * L["cellW"], L["y0"] - 56, L["x0"] + COLS * L["cellW"], L["y0"] - 8), 7, True).split()
-    check(f"{tag}: ... and end at 96", "".join(topright).endswith("949596"), str(topright))
+    check(f"{tag}: ... and the last ones at the right edge are 3, 2, 1", "".join(topright).startswith("32"), str(topright))
     left_bottom = ocr(img, (L["x0"] - 70, L["y0"] + L["chartH"] - 3 * L["cellH"], L["x0"] - 6, L["y0"] + L["chartH"]), 6, True).split()
     left_top = ocr(img, (L["x0"] - 70, L["y0"], L["x0"] - 6, L["y0"] + 3 * L["cellH"]), 6, True).split()
     check(f"{tag}: row 1 is at the BOTTOM (rows 3, 2, 1 reading down the bottom-left)", left_bottom == ["3", "2", "1"], str(left_bottom))

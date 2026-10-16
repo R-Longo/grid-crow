@@ -30,6 +30,8 @@ import type { DownloadChoices, DownloadNote } from "./DownloadPanel";
 import { buildPatternModel, patternFileName } from "../engine/export/pattern";
 import { downloadBlob, renderPatternPng } from "../lib/exportPng";
 import { renderPatternPdf } from "../lib/exportPdf";
+import { afterExport, hasDownload, unsavedCount } from "../state/exportCheckpoint";
+import type { ExportCheckpoint } from "../state/exportCheckpoint";
 import { tiledPageCount } from "../engine/export/pdf/tiled";
 
 /** Phones and narrow tablets get the compact editor: header, chart, then a bottom dock with the tools and yarn colors. */
@@ -58,8 +60,11 @@ interface ChartViewProps {
   image: DecodedImage | null;
   crop: CropState;
   aspect: number;
-  /** Told how many stitches differ from the converted chart (0 when nothing is edited, and when the chart goes away). */
-  onEditedChange?: (changed: number) => void;
+  /**
+   * Told how many hand-edited stitches would be lost if the chart were replaced now (0 when nothing is at risk, and when the
+   * chart goes away). After a download, only stitches edited since then count; `afterDownload` says which wording applies.
+   */
+  onEditedChange?: (unsaved: number, afterDownload: boolean) => void;
 }
 
 /**
@@ -112,6 +117,8 @@ export function ChartView({ matrix: converted, image, crop, aspect, onEditedChan
   const [hover, setHover] = useState<Stitch | null>(null);
   const [matrix, setMatrix] = useState<StitchMatrix>(converted);
   const [changed, setChanged] = useState(0);
+  // The chart as it was when the last download started (null before the first download). Downloaded edits are safe in the file.
+  const [checkpoint, setCheckpoint] = useState<ExportCheckpoint | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
   const [drawVersion, setDrawVersion] = useState(0);
   const zoomId = useId();
@@ -143,10 +150,12 @@ export function ChartView({ matrix: converted, image, crop, aspect, onEditedChan
   // Let the page know whether there are hand edits to protect.
   const editedCb = useRef(onEditedChange);
   editedCb.current = onEditedChange;
+  const unsaved = useMemo(() => unsavedCount(matrix, converted, checkpoint), [matrix, converted, checkpoint]);
+  const downloaded = hasDownload(converted, checkpoint);
   useEffect(() => {
-    editedCb.current?.(changed);
-  }, [changed]);
-  useEffect(() => () => editedCb.current?.(0), []);
+    editedCb.current?.(unsaved, downloaded);
+  }, [unsaved, downloaded]);
+  useEffect(() => () => editedCb.current?.(0, false), []);
 
   // A new conversion replaces the chart being edited.
   useEffect(() => {
@@ -524,10 +533,16 @@ export function ChartView({ matrix: converted, image, crop, aspect, onEditedChan
     setExporting("png");
     setExportNote(null);
     try {
-      const model = buildPatternModel(sessionRef.current!.matrix);
+      // The chart as it is when the export starts: this is what the file contains, and what counts as downloaded.
+      const exportSession = sessionRef.current!;
+      const snapshot = exportSession.matrix;
+      const model = buildPatternModel(snapshot);
       const name = patternFileName(model, "png");
       const blob = await renderPatternPng(model, { letters: downloadChoices.pngLetters });
       if (!downloadBlob(blob, name)) throw new Error("The browser did not start the download.");
+      // Only now, with the browser holding the file, do these edits count as downloaded. Stitches painted while the
+      // file was being made are not in it, so they stay unsaved.
+      setCheckpoint((cur) => afterExport(cur, exportSession.converted, snapshot, true));
       setExportNote({ kind: "ok", text: `Downloaded ${name}` });
     } catch (e) {
       setExportNote({ kind: "error", text: e instanceof Error ? e.message : "Something went wrong making the PNG." });
@@ -541,7 +556,9 @@ export function ChartView({ matrix: converted, image, crop, aspect, onEditedChan
     setExporting("pdf");
     setExportNote(null);
     try {
-      const model = buildPatternModel(sessionRef.current!.matrix);
+      const exportSession = sessionRef.current!;
+      const snapshot = exportSession.matrix;
+      const model = buildPatternModel(snapshot);
       const tiled = downloadChoices.pdfLayout === "tiled";
       const name = patternFileName(model, "pdf", tiled ? "large-print" : "");
       const blob = await renderPatternPdf(model, {
@@ -549,6 +566,9 @@ export function ChartView({ matrix: converted, image, crop, aspect, onEditedChan
         letters: downloadChoices.pdfLetters,
       });
       if (!downloadBlob(blob, name)) throw new Error("The browser did not start the download.");
+      // Only now, with the browser holding the file, do these edits count as downloaded. Stitches painted while the
+      // file was being made are not in it, so they stay unsaved.
+      setCheckpoint((cur) => afterExport(cur, exportSession.converted, snapshot, true));
       setExportNote({ kind: "ok", text: `Downloaded ${name}` });
     } catch (e) {
       setExportNote({ kind: "error", text: e instanceof Error ? e.message : "Something went wrong making the PDF." });
@@ -580,7 +600,7 @@ export function ChartView({ matrix: converted, image, crop, aspect, onEditedChan
   };
 
   const activeColor = matrix.palette[active] ?? matrix.palette[0];
-  const label = hover ? stitchLabel(hover, matrix.rows) : null;
+  const label = hover ? stitchLabel(hover, matrix.rows, matrix.cols) : null;
 
   const TOOLS: Array<{ id: Tool | "pan"; label: string; short: string; icon: IconName }> = [
     { id: "paint", label: "Paint", short: "Paint", icon: "pencil" },
@@ -798,6 +818,12 @@ export function ChartView({ matrix: converted, image, crop, aspect, onEditedChan
     <>
       <span className="chart__changed" data-testid="chart-changed">
         {changed === 0 ? "No edits yet" : `${changed} ${changed === 1 ? "stitch" : "stitches"} changed`}
+        {changed > 0 && downloaded && (
+          <span data-testid="chart-unsaved">
+            {" · "}
+            {unsaved === 0 ? "all downloaded" : `${unsaved} not downloaded yet`}
+          </span>
+        )}
       </span>
       <button
         ref={resetBtnRef}

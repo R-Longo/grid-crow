@@ -3,6 +3,8 @@ import { discardMessage } from "../state/discardGuard";
 
 interface ConfirmDiscardProps {
   changed: number;
+  /** True once the chart has been downloaded: the number is then what was edited since. */
+  sinceDownload?: boolean;
   what: string;
   onConfirm: () => void;
   onCancel: () => void;
@@ -13,12 +15,12 @@ interface ConfirmDiscardProps {
  * focus stays inside, and Escape answers "Keep editing". It opens with focus on the safe choice, and clicking the
  * dim area outside does nothing, so a stray tap can never discard work.
  */
-export function ConfirmDiscard({ changed, what, onConfirm, onCancel }: ConfirmDiscardProps) {
+export function ConfirmDiscard({ changed, sinceDownload = false, what, onConfirm, onCancel }: ConfirmDiscardProps) {
   const ref = useRef<HTMLDialogElement>(null);
   const keepRef = useRef<HTMLButtonElement>(null);
   const titleId = useId();
   const descId = useId();
-  const { title, text } = discardMessage(changed, what);
+  const { title, text } = discardMessage(changed, what, sinceDownload);
 
   useEffect(() => {
     const d = ref.current;

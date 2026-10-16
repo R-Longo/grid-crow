@@ -60,7 +60,7 @@ function decodeByNumbers(p: PdfPage, cellW: number, cellH: number, numberSize = 
 }
 
 const tilePages = (pages: PdfPage[]) => pages.filter((p) => p.meta?.kind === "tile");
-const fillAt = (m: PatternModel, col: number, rowNum: number) => m.hexOf[m.matrix.cells[m.rows - rowNum][col - 1]];
+const fillAt = (m: PatternModel, col: number, rowNum: number) => m.hexOf[m.matrix.cells[m.rows - rowNum][m.cols - col]];
 
 describe("PDF writer", () => {
   it("writes a well-formed file: header, objects at the offsets the table says, page count, trailer", () => {
@@ -175,11 +175,12 @@ describe("Fit to Page", () => {
     expect(off.flatMap((p) => texts(p, "info")).map((t) => t.s).join(" ")).not.toContain("Letters are not printed");
   });
 
-  it("numbers columns left to right and row 1 at the bottom", () => {
+  it("numbers stitches from the RIGHT (stitch 1 at the right edge) and row 1 at the bottom", () => {
     const pages = buildPdfDoc(model(60, 90, 5), { layout: "fit", letters: false }).pages;
     const top = texts(pages[0], "label-col-top").sort((a, b) => a.x - b.x);
-    expect(top.map((t) => Number(t.s))).toEqual([...top.map((t) => Number(t.s))].sort((a, b) => a - b));
-    expect(top[0].s).toBe("1");
+    expect(top.map((t) => Number(t.s))).toEqual([...top.map((t) => Number(t.s))].sort((a, b) => b - a));
+    expect(top[top.length - 1].s).toBe("1");
+    expect(top[0].s).toBe("60");
     const left = texts(pages[0], "label-row-left").sort((a, b) => a.y - b.y); // top of the page first
     expect(left.map((t) => Number(t.s))).toEqual([...left.map((t) => Number(t.s))].sort((a, b) => b - a));
     expect(left[left.length - 1].s).toBe("1");
@@ -271,30 +272,32 @@ describe("Large Print (tiled) PDF", () => {
     for (const p of tiles96) {
       const t = p.meta!.tile as { c0: number; c1: number; r0: number; r1: number; page: number };
       const cols = texts(p, "label-col-top").map((x) => Number(x.s)).sort((a, b) => a - b);
-      expect(cols[0]).toBe(t.c0 + 1);
-      expect(cols[cols.length - 1]).toBe(t.c1);
+      expect(cols[0]).toBe(96 - t.c1 + 1);
+      expect(cols[cols.length - 1]).toBe(96 - t.c0);
       const rows = texts(p, "label-row-left").map((x) => Number(x.s)).sort((a, b) => a - b);
       expect(rows[0]).toBe(144 - t.r1 + 1);
       expect(rows[rows.length - 1]).toBe(144 - t.r0);
-      expect(texts(p, "range")[0].s).toBe(`Columns ${t.c0 + 1}–${t.c1} of 96  ·  Rows ${144 - t.r1 + 1}–${144 - t.r0} of 144`);
+      expect(texts(p, "range")[0].s).toBe(`Columns ${96 - t.c1 + 1}–${96 - t.c0} of 96  ·  Rows ${144 - t.r1 + 1}–${144 - t.r0} of 144`);
       expect(texts(p, "page-id")[0].s).toBe(`Page ${t.page} of 17`);
     }
-    // page 7 is the second down, second across: columns 25-48, rows 73-108
-    expect(texts(doc96.pages[6], "range")[0].s).toContain("Columns 25–48 of 96");
+    // page 7 is the second down, second across: stitches 49-72 (counted from the right), rows 73-108
+    expect(texts(doc96.pages[6], "range")[0].s).toContain("Columns 49–72 of 96");
     expect(texts(doc96.pages[6], "range")[0].s).toContain("Rows 73–108 of 144");
   });
 
-  it("numbers columns left to right and row 1 at the bottom on every page", () => {
+  it("numbers stitches from the right and row 1 at the bottom on every page", () => {
     for (const p of tiles96) {
       const top = texts(p, "label-col-top").sort((a, b) => a.x - b.x).map((t) => Number(t.s));
-      expect(top).toEqual([...top].sort((a, b) => a - b));
+      expect(top).toEqual([...top].sort((a, b) => b - a));
       const left = texts(p, "label-row-left").sort((a, b) => a.y - b.y).map((t) => Number(t.s));
       expect(left).toEqual([...left].sort((a, b) => b - a));
     }
-    // page 17 is the bottom-right page: it holds row 1 at its bottom and column 96 at its right
+    // page 17 is the bottom-right page: it holds row 1 at its bottom and stitch 1 at its right edge
     const last = doc96.pages[16];
     expect(texts(last, "label-row-left").sort((a, b) => b.y - a.y)[0].s).toBe("1");
-    expect(texts(last, "label-col-top").sort((a, b) => b.x - a.x)[0].s).toBe("96");
+    expect(texts(last, "label-col-top").sort((a, b) => b.x - a.x)[0].s).toBe("1");
+    // and the top-left page starts at stitch 96, the far left
+    expect(texts(doc96.pages[1], "label-col-top").sort((a, b) => a.x - b.x)[0].s).toBe("96");
   });
 
   it("adjacent pages share exactly one edge: bold line on both, same registration ticks, neighbouring stitches continue", () => {
@@ -345,7 +348,7 @@ describe("Large Print (tiled) PDF", () => {
         // stitch columns continue: the last column on A is one less than the first on B, over the same rows
         const ca = decodeByNumbers(a, TILE_CELL_W, TILE_CELL_H);
         const cb = decodeByNumbers(b, TILE_CELL_W, TILE_CELL_H);
-        expect(Math.max(...ca.map((c) => c.col)) + 1).toBe(Math.min(...cb.map((c) => c.col)));
+        expect(Math.min(...ca.map((c) => c.col)) - 1).toBe(Math.max(...cb.map((c) => c.col))); // counting from the right, the page on the left holds the higher numbers
         expect([Math.min(...ca.map((c) => c.rowNum)), Math.max(...ca.map((c) => c.rowNum))]).toEqual([Math.min(...cb.map((c) => c.rowNum)), Math.max(...cb.map((c) => c.rowNum))]);
         // the joining edges are the same length
         const ja = lines(a, "join").find((j) => j.x1 === j.x2 && j.x1 > (a.meta!.chart as { x0: number }).x0 + 1)!;
@@ -454,7 +457,7 @@ describe("Large Print (tiled) PDF", () => {
       const byPos = new Map(cells.map((c) => [`${Math.round(c.cx * 1000)},${Math.round(c.cy * 1000)}`, c]));
       for (const l of texts(p, "letter")) {
         const c = byPos.get(`${Math.round(l.x * 1000)},${Math.round((l.y - 10.5 * 0.36) * 1000)}`)!;
-        expect(l.s).toBe(m96.letterOf[m96.matrix.cells[144 - c.rowNum][c.col - 1]]);
+        expect(l.s).toBe(m96.letterOf[m96.matrix.cells[144 - c.rowNum][96 - c.col]]);
       }
     }
   });

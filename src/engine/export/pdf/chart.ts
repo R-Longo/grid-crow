@@ -90,14 +90,14 @@ export function drawRegion(ops: Op[], model: PatternModel, g: Region): void {
 
   // Thin grid between stitches.
   if (g.thinWidth > 0) {
-    for (let c = g.c0 + 1; c < g.c1; c++) if (c % 10 !== 0) ops.push({ k: "line", x1: xAt(c), y1: g.y0, x2: xAt(c), y2: g.y0 + h, w: g.thinWidth, color: GRID, tag: "grid" });
+    for (let c = g.c0 + 1; c < g.c1; c++) if ((cols - c) % 10 !== 0) ops.push({ k: "line", x1: xAt(c), y1: g.y0, x2: xAt(c), y2: g.y0 + h, w: g.thinWidth, color: GRID, tag: "grid" });
     for (let r = g.r0 + 1; r < g.r1; r++) if ((rows - r) % 10 !== 0) ops.push({ k: "line", x1: g.x0, y1: yAt(r), x2: g.x0 + w, y2: yAt(r), w: g.thinWidth, color: GRID, tag: "grid" });
   }
 
-  // Heavier line after every 10th stitch (from the left) and 10th row (from the bottom): a white edge under a dark core, so it shows on any yarn.
+  // Heavier line after every 10th stitch (from the right) and 10th row (from the bottom): a white edge under a dark core, so it shows on any yarn.
   const halo = g.heavyWidth + Math.min(1.6, g.cellH * 0.18);
   for (let c = g.c0 + 1; c < g.c1; c++) {
-    if (c % 10 !== 0) continue;
+    if ((cols - c) % 10 !== 0) continue;
     ops.push({ k: "line", x1: xAt(c), y1: g.y0, x2: xAt(c), y2: g.y0 + h, w: halo, color: WHITE, tag: "heavy-halo" });
     ops.push({ k: "line", x1: xAt(c), y1: g.y0, x2: xAt(c), y2: g.y0 + h, w: g.heavyWidth, color: INK, tag: "heavy" });
   }
@@ -134,17 +134,17 @@ export function drawRegion(ops: Op[], model: PatternModel, g: Region): void {
     }
   }
   if (g.joins.top || g.joins.bottom) {
-    for (const c of tickLines(g.c0, g.c1, (i) => i)) {
+    for (const c of tickLines(g.c0, g.c1, (i) => cols - i)) {
       const x = xAt(c);
       if (g.joins.top) ops.push({ k: "line", x1: x, y1: T - TICK_OUT, x2: x, y2: T + TICK_IN, w: tickW, color: INK, tag: "tick-top" });
       if (g.joins.bottom) ops.push({ k: "line", x1: x, y1: B - TICK_IN, x2: x, y2: B + TICK_OUT, w: tickW, color: INK, tag: "tick-bottom" });
     }
   }
 
-  // Numbers. Columns run left to right (1 at the left of the whole chart); row 1 is the BOTTOM row of the whole chart.
+  // Numbers. Stitch 1 is the rightmost column of the whole chart; row 1 is the BOTTOM row of the whole chart.
   const ns = g.numberSize;
   for (let c = g.c0; c < g.c1; c++) {
-    const n = c + 1;
+    const n = cols - c;
     if (!(n === 1 || n % g.stepX === 0)) continue;
     const x = xAt(c) + g.cellW / 2;
     const bold = n % 10 === 0;
@@ -159,5 +159,4 @@ export function drawRegion(ops: Op[], model: PatternModel, g: Region): void {
     ops.push({ k: "text", x: L - g.gutter, y, s: String(n), size: ns, bold, color: MUTED, align: "center", tag: "label-row-left" });
     ops.push({ k: "text", x: R + g.gutter, y, s: String(n), size: ns, bold, color: MUTED, align: "center", tag: "label-row-right" });
   }
-  void cols;
 }

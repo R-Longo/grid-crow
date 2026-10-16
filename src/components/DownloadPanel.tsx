@@ -36,7 +36,7 @@ export function DownloadPanel({ onPng, onPdf, busy, note, choices, onChoices, ti
   return (
     <div className="download" data-testid="download-panel">
       <p className="download__text">Save your finished chart as a sharp picture you can zoom in on, with a color key and stitch counts.</p>
-      <button type="button" className="chart__small chart__small--primary download__btn" data-testid="download-png" disabled={busy !== null} onClick={onPng}>
+      <button type="button" className="chart__small download__btn download__btn--png" data-testid="download-png" disabled={busy !== null} onClick={onPng}>
         <Icon name="download" size={18} />
         {busy === "png" ? "Making your PNG…" : "Download PNG"}
       </button>
@@ -66,7 +66,7 @@ export function DownloadPanel({ onPng, onPdf, busy, note, choices, onChoices, ti
           <input type="checkbox" data-testid="pdf-letters" checked={choices.pdfLetters} onChange={(e) => onChoices({ ...choices, pdfLetters: e.target.checked })} />
           <span>Color letters inside the stitches</span>
         </label>
-        <button type="button" className="chart__small download__btn" data-testid="download-pdf" disabled={busy !== null} onClick={onPdf}>
+        <button type="button" className="chart__small download__btn download__btn--pdf" data-testid="download-pdf" disabled={busy !== null} onClick={onPdf}>
           <Icon name="download" size={18} />
           {busy === "pdf" ? "Making your PDF…" : "Download PDF"}
         </button>

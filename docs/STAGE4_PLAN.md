@@ -171,3 +171,12 @@ Digital-first: the PNG stays the simplest download; the PDF is the flexible one 
 - Large print: pages hold at most 27 x 38 stitches at the real gauge (18 x 16 pt per stitch), split into the fewest, most even parts, always between stitches. Page 1 is the overview (steps, assembly picture with page numbers and stitch ranges, color key). Each chart page: bold 3 pt alignment line on the edges that join, registration ticks at every 5th stitch line on both pages, "Joins page N" beside each joining edge, global column and row ranges, "you are here" mini map. No stitch is ever printed twice; the pages are trimmed along the bold line and butted together.
 - Letters: PNG off by default, PDF on by default (both optional); the legend always has the letters.
 - Tests: `pdf/pdf.test.ts` (52) plus `scripts/e2e/stage5b_browser.py` (reads the real downloaded PDFs with qpdf, pdftotext, pdftoppm). Service worker cache v21.
+
+## 13. Stage 5C built (export checkpoint) and two follow-up changes
+
+**Export checkpoint.** A successful download counts as "saved". `src/state/exportCheckpoint.ts`: the unsaved count is the smaller of (stitches that differ from the converted chart) and (stitches that differ from the chart as it was when the last download started). The snapshot is taken when the export starts, and is kept only if the browser download was actually started, so a failed export saves nothing and edits made while the export runs stay unsaved. A new conversion drops the checkpoint. The existing discard warning and leave-page prompt use the unsaved count, so they come back after any new edit; the dialog says "N hand-edited stitches since your last download" once a download exists. The status line shows "all downloaded" or "N not downloaded yet". There is no project saving, account or cloud (not in V1).
+- Tests: `state/exportCheckpoint.test.ts` (12) and `scripts/e2e/stage5c_browser.py` (desktop and phone: edit, download, edit again, failed download, slowed export, undo back, Reset).
+
+**Right-to-left numbering.** Tapestry rows are worked right to left on odd rows and left to right on even rows, so stitch 1 is at the RIGHT edge. Stitch numbers (hover label, PNG, PDF, tiled page ranges, heavy 10-lines and join ticks) now count from the right; row 1 is still the bottom. The picture itself is not mirrored. Printed note: "Odd rows: work right to left. Even rows: turn, work left to right."
+
+**Buttons.** Download PNG is Honey Gold #E8B84F; Download PDF is the terracotta of the main button. Service worker cache v22.

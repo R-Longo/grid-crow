@@ -49,8 +49,8 @@ describe("display numbering is display only", () => {
     play(s, [down(1, "mouse", centre(0, 0)), up(1), down(1, "mouse", centre(11, 15)), up(1)]);
     expect(s.matrix.cells[0][0]).toBe(3); // matrix row 0 is the TOP row
     expect(s.matrix.cells[15][11]).toBe(3); // matrix row 15 is the BOTTOM row
-    expect(stitchLabel({ col: 0, row: 0 }, 16)).toEqual({ stitch: 1, row: 16 }); // top-left = row 16
-    expect(stitchLabel({ col: 11, row: 15 }, 16)).toEqual({ stitch: 12, row: 1 }); // bottom-right = row 1
+    expect(stitchLabel({ col: 0, row: 0 }, 16, 12)).toEqual({ stitch: 12, row: 16 }); // top-left = row 16, last stitch
+    expect(stitchLabel({ col: 11, row: 15 }, 16, 12)).toEqual({ stitch: 1, row: 1 }); // bottom-right = row 1, stitch 1
     // nothing else moved
     const expected = sample();
     expected.cells[0][0] = 3;

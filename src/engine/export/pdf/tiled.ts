@@ -62,7 +62,7 @@ export function drawAssembly(ops: Op[], plan: TilePlan, box: Box, opts: { number
       ops.push({ k: "text", x: x + tw / 2, y: y + th / 2 + size * (showRanges ? -0.05 : 0.36), s: String(t.page), size, bold: true, color: here ? "#ffffff" : INK, align: "center", tag: `${tag}-page` });
       if (showRanges && model) {
         const rr = tileRowRange(model, t);
-        ops.push({ k: "text", x: x + tw / 2, y: y + th / 2 + size * 0.75, s: `col ${t.c0 + 1}–${t.c1}`, size: 6.5, color: here ? "#ffffff" : MUTED, align: "center", tag: `${tag}-range` });
+        ops.push({ k: "text", x: x + tw / 2, y: y + th / 2 + size * 0.75, s: `col ${model.cols - t.c1 + 1}–${model.cols - t.c0}`, size: 6.5, color: here ? "#ffffff" : MUTED, align: "center", tag: `${tag}-range` });
         ops.push({ k: "text", x: x + tw / 2, y: y + th / 2 + size * 0.75 + 8, s: `row ${rr.bottom}–${rr.top}`, size: 6.5, color: here ? "#ffffff" : MUTED, align: "center", tag: `${tag}-range` });
       }
     }
@@ -77,9 +77,10 @@ function overviewPage(model: PatternModel, plan: TilePlan, lettersOn: boolean): 
   const last = plan.tiles[plan.tiles.length - 1].page;
   ops.push({ k: "text", x: M, y: M + 14, s: "GridCrow crochet chart: large print", size: 16, bold: true, color: INK, tag: "title" });
   ops.push({ k: "text", x: M, y: M + 32, s: `${sizeLine(model)} · ${finishedLine(model).replace("Finished size about", "finished size about")}`, size: 10.5, color: INK, tag: "title-size" });
-  ops.push({ k: "text", x: M, y: M + 46, s: `${NUMBERING_NOTE} Page numbers below match the page numbers in this PDF.`, size: 9, color: MUTED, tag: "title-note" });
+  ops.push({ k: "text", x: M, y: M + 46, s: NUMBERING_NOTE, size: 9, color: MUTED, tag: "title-note" });
+  ops.push({ k: "text", x: M, y: M + 58, s: "Page numbers below match the page numbers in this PDF.", size: 9, color: MUTED, tag: "title-note" });
 
-  let y = M + 60;
+  let y = M + 72;
   ops.push({ k: "text", x: M, y: y + 12, s: plan.tiles.length === 1 ? "Printing" : "How to put it together", size: 12, bold: true, color: INK, tag: "steps-title" });
   y += 12;
   const steps =
@@ -126,7 +127,7 @@ function tilePage(model: PatternModel, plan: TilePlan, t: Tile, letters: boolean
   const rr = tileRowRange(model, t);
 
   ops.push({ k: "text", x: M, y: 46, s: "GridCrow crochet chart", size: 12, bold: true, color: INK, tag: "title" });
-  ops.push({ k: "text", x: M, y: 61, s: `Columns ${t.c0 + 1}–${t.c1} of ${model.cols}  ·  Rows ${rr.bottom}–${rr.top} of ${model.rows}`, size: 10, bold: true, color: INK, tag: "range" });
+  ops.push({ k: "text", x: M, y: 61, s: `Columns ${model.cols - t.c1 + 1}–${model.cols - t.c0} of ${model.cols}  ·  Rows ${rr.bottom}–${rr.top} of ${model.rows}`, size: 10, bold: true, color: INK, tag: "range" });
   if (plan.tiles.length > 1) ops.push({ k: "text", x: M, y: 75, s: `Section ${t.tr + 1} down, ${t.tc + 1} across`, size: 8.5, color: MUTED, tag: "section" });
   ops.push({ k: "text", x: W - M, y: 46, s: `Page ${t.page} of ${last}`, size: 12, bold: true, color: INK, align: "right", tag: "page-id" });
   if (plan.tiles.length > 1) drawAssembly(ops, plan, { x: W - M - 74, y: 52, w: 74, h: 36 }, { numbers: false, ranges: false, highlight: t.page, tag: "mini" });
@@ -163,7 +164,7 @@ function tilePage(model: PatternModel, plan: TilePlan, t: Tile, letters: boolean
   if (t.bottom !== undefined) ops.push({ k: "text", x: midX, y: y0 + chartH + 28, s: note(`Joins page ${t.bottom} (below)`), size: 9, bold: true, color: INK, align: "center", tag: "join-note-bottom" });
 
   ops.push({ k: "text", x: M, y: LETTER.height - 41, s: "Print at 100% (Actual size), not Fit to page. Bold lines are where pages join: trim to the line, match the ticks, tape.", size: 8, color: MUTED, tag: "footer" });
-  ops.push({ k: "text", x: M, y: LETTER.height - 30, s: "Row 1 is the bottom row. Stitches are counted from the left. Numbers count the whole chart, not just this page.", size: 8, color: MUTED, tag: "footer-note" });
+  ops.push({ k: "text", x: M, y: LETTER.height - 30, s: "Row 1 is the bottom row; stitch 1 is at the right. Numbers count the whole chart, not just this page.", size: 8, color: MUTED, tag: "footer-note" });
   return { width: W, height: LETTER.height, ops, meta: { kind: "tile", tile: t, chart: { x0, y0, cellW: TILE_CELL_W, cellH: TILE_CELL_H } } };
 }
 

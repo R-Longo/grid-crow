@@ -100,9 +100,9 @@ describe("clicks through the whole path (client point -> canvas -> stitch)", () 
 
 describe("numbering shown to people", () => {
   it("is 1-based, stitches from the left, row 1 at the bottom", () => {
-    expect(stitchLabel({ col: 0, row: 143 }, 144)).toEqual({ stitch: 1, row: 1 });
-    expect(stitchLabel({ col: 95, row: 0 }, 144)).toEqual({ stitch: 96, row: 144 });
-    expect(stitchLabel({ col: 11, row: 109 }, 144)).toEqual({ stitch: 12, row: 35 });
+    expect(stitchLabel({ col: 95, row: 143 }, 144, 96)).toEqual({ stitch: 1, row: 1 });
+    expect(stitchLabel({ col: 0, row: 0 }, 144, 96)).toEqual({ stitch: 96, row: 144 });
+    expect(stitchLabel({ col: 84, row: 109 }, 144, 96)).toEqual({ stitch: 12, row: 35 });
   });
 });
 

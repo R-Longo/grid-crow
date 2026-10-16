@@ -59,9 +59,9 @@ export function clientToCanvas(
   return { x: ((clientX - box.left) * canvasW) / box.width, y: ((clientY - box.top) * canvasH) / box.height };
 }
 
-/** Numbers shown to people: 1-based, stitch counted from the left, row 1 at the bottom. */
-export function stitchLabel(s: Stitch, rows: number): { stitch: number; row: number } {
-  return { stitch: s.col + 1, row: rows - s.row };
+/** Numbers shown to people: 1-based, stitch 1 at the RIGHT edge (odd rows are worked right to left), row 1 at the bottom. */
+export function stitchLabel(s: Stitch, rows: number, cols: number): { stitch: number; row: number } {
+  return { stitch: cols - s.col, row: rows - s.row };
 }
 
 export const MIN_ZOOM = 1;

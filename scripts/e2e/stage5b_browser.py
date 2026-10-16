@@ -59,7 +59,7 @@ def verify_tiled(tag, path, after, pal):
     check(f"{tag}: the overview says to print pages 2–17 at 100% and shows page numbers", "Print pages 2–17 at 100% (Actual size)" in first and all(str(n) in first for n in range(2, 18)), "")
     check(f"{tag}: the overview has exact counts and the gauge", all(f"{n:,} stitch" in first for _, n in used) and "worsted-weight #4 yarn and a 5 mm hook" in first)
     t7 = re.sub(r"\s+", " ", text(path, 7, 7))
-    check(f"{tag}: page 7 prints global ranges (columns 25–48, rows 73–108) and its neighbours", "Columns 25–48 of 96" in t7 and "Rows 73–108 of 144" in t7 and "Page 7 of 17" in t7 and all(f"Joins page {n}" in t7 for n in (6, 8)), t7[:200])
+    check(f"{tag}: page 7 prints global ranges (stitches 49–72 counted from the right, rows 73–108) and its neighbours", "Columns 49–72 of 96" in t7 and "Rows 73–108 of 144" in t7 and "Page 7 of 17" in t7 and all(f"Joins page {n}" in t7 for n in (6, 8)), t7[:200])
     # every stitch, every page, read from rendered pixels; then each stitch must be seen exactly once
     dpi = 144; k = dpi / 72; seen = [0] * (COLS * ROWS); bad = 0
     for pg in P[1:]:

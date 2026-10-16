@@ -1061,6 +1061,31 @@ legend {
   width: 100%;
 }
 
+/* Download PNG is Honey Gold; Download PDF is the terracotta of the main button. Dark text on both. */
+.chart .download__btn--png {
+  border-color: #e8b84f;
+  background: #e8b84f;
+  color: var(--cta-text);
+  font-weight: 700;
+}
+
+.chart .download__btn--png:hover:not(:disabled) {
+  border-color: #f0c767;
+  background: #f0c767;
+}
+
+.chart .download__btn--pdf {
+  border-color: var(--cta);
+  background: var(--cta);
+  color: var(--cta-text);
+  font-weight: 700;
+}
+
+.chart .download__btn--pdf:hover:not(:disabled) {
+  border-color: var(--cta-hover);
+  background: var(--cta-hover);
+}
+
 .download__check {
   display: flex;
   align-items: center;

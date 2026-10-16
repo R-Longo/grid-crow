@@ -7,7 +7,7 @@ import { colorCounts } from "../editor/paint";
  * Everything an exported pattern says, worked out from the stitch matrix and nothing else. The PNG and PDF exports are
  * both drawn from this one description, so they cannot disagree about a count, a letter or a number.
  *
- * Numbering follows the chart conventions everywhere in GridCrow: stitches count from the left (1, 2, 3 ...) and
+ * Numbering follows the chart conventions everywhere in GridCrow: stitches count from the RIGHT (stitch 1 is the right-hand edge, as odd rows are worked right to left) and
  * row 1 is the BOTTOM row, with row numbers rising upward. Inside the program a stitch is (col, row) with row 0 at the top.
  */
 
@@ -75,9 +75,9 @@ export function buildPatternModel(matrix: StitchMatrix): PatternModel {
   };
 }
 
-/** The number printed for column `col` (0-based, from the left) and for matrix row `row` (0 = top): row 1 is the bottom. */
-export function stitchNumbers(col: number, row: number, rows: number): { column: number; row: number } {
-  const n = stitchLabel({ col, row }, rows);
+/** The number printed for column `col` (0-based, from the left; stitch 1 is the rightmost column) and for matrix row `row` (0 = top): row 1 is the bottom. */
+export function stitchNumbers(col: number, row: number, rows: number, cols: number): { column: number; row: number } {
+  const n = stitchLabel({ col, row }, rows, cols);
   return { column: n.stitch, row: n.row };
 }
 
@@ -106,7 +106,7 @@ export function gaugeLine(): string {
   return `Reference gauge: ${g.stitchesPerSwatch} stitches × ${g.rowsPerSwatch} rows per ${g.swatchInches} inches, using ${yarn} yarn and a ${g.hookLabel} hook.`;
 }
 
-export const NUMBERING_NOTE = "Row 1 is the bottom row. Stitches are counted from the left.";
+export const NUMBERING_NOTE = "Row 1 is the bottom row. Stitch 1 is at the right. Odd rows: work right to left. Even rows: turn, work left to right.";
 
 export function patternFileName(m: PatternModel, extension: "png" | "pdf", suffix = ""): string {
   return `gridcrow-pattern-${m.cols}x${m.rows}${suffix ? "-" + suffix : ""}.${extension}`;

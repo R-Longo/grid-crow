@@ -32,6 +32,7 @@ export function SetupScreen() {
   // How many stitches the person has hand-edited in the chart on screen (reported by the chart). While it is above zero,
   // anything that would replace the chart asks first, and closing the tab asks too.
   const [edited, setEdited] = useState(0);
+  const [sinceDownload, setSinceDownload] = useState(false);
   const guard = useDiscardGuard(edited);
 
   // Anything the chart depends on changing makes an old result stale, so it is cleared.
@@ -195,13 +196,17 @@ export function SetupScreen() {
           image={image}
           crop={result.crop}
           aspect={result.aspect}
-          onEditedChange={setEdited}
+          onEditedChange={(n, afterDownload) => {
+            setEdited(n);
+            setSinceDownload(afterDownload);
+          }}
         />
       )}
 
       {guard.pending && (
         <ConfirmDiscard
           changed={edited}
+          sinceDownload={sinceDownload}
           what={guard.pending.what}
           onConfirm={guard.confirm}
           onCancel={guard.cancel}

@@ -12,3 +12,5 @@ Stage 5: `stage5_browser.py desktop|mobile` downloads the real PNG and reads it 
 prints the PNG layout for a chart size: `npx vite-node scripts/e2e/layout_probe.ts 96 144 10`.
 
 Stage 5B: `stage5b_browser.py desktop|mobile` downloads the real PDFs (Fit to one page and Large print) and checks them with `qpdf`, `pdftotext` and `pdftoppm`: every stitch against the edited chart on screen, page count, global ranges, joining lines and ticks. `pdf_probe.ts` prints where the PDF puts the chart on each page; `make_pdf.ts` writes a sample PDF from a synthetic chart.
+
+Stage 5C: `stage5c_browser.py desktop|mobile` checks that a download becomes the saved checkpoint: the status line, the "since your last download" dialog, the leave-page prompt, a failed download (nothing is marked saved), and edits made during a slowed export. It imports helpers from `stage5_browser.py`, so run it from this folder without `-I`.

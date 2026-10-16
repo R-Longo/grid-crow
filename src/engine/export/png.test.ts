@@ -141,13 +141,13 @@ describe("PNG export draws the stitch matrix", () => {
     expect([on.layout.width, on.layout.height, on.layout.cellW]).toEqual([off.layout.width, off.layout.height, off.layout.cellW]);
   });
 
-  it("numbers columns left to right, from 1", () => {
+  it("numbers stitches from the RIGHT: stitch 1 at the right edge, 30 at the left", () => {
     const { layout: l, rec } = render(chart(30, 40, 4));
     const top = rec.texts.filter((t) => t.y < l.y0 && t.y > l.y0 - l.numberSize * 3 && /^\d+$/.test(t.text) && t.x >= l.x0 && t.x <= l.x0 + l.chartW);
     expect(top).toHaveLength(30);
     const sorted = [...top].sort((a, b) => a.x - b.x);
-    expect(sorted.map((t) => Number(t.text))).toEqual(Array.from({ length: 30 }, (_, i) => i + 1));
-    sorted.forEach((t, i) => expect(t.x).toBe(l.x0 + i * l.cellW + l.cellW / 2)); // number n is centred over stitch n
+    expect(sorted.map((t) => Number(t.text))).toEqual(Array.from({ length: 30 }, (_, i) => 30 - i));
+    sorted.forEach((t, i) => expect(t.x).toBe(l.x0 + i * l.cellW + l.cellW / 2)); // number n is centred over the stitch n from the right
     // and the same along the bottom edge
     const bottom = rec.texts.filter((t) => t.y > l.y0 + l.chartH && t.y < l.y0 + l.chartH + l.numberSize * 3 && /^\d+$/.test(t.text));
     expect(bottom.map((t) => t.text).sort()).toEqual(top.map((t) => t.text).sort());
@@ -177,10 +177,10 @@ describe("PNG export draws the stitch matrix", () => {
     expect(one.y).toBe(l.y0 + 11 * l.cellH + l.cellH / 2);
   });
 
-  it("draws heavier counting lines after every 10th stitch and row, counted from the left and the bottom", () => {
+  it("draws heavier counting lines after every 10th stitch and row, counted from the right and the bottom", () => {
     const { layout: l, rec } = render(chart(96, 144, 6));
     const heavyV = rec.rects.filter((r) => r.w === 2 && r.h === l.chartH && r.fill === "#17191b" && r.y === l.y0 && r.x > l.x0 && r.x < l.x0 + l.chartW);
-    expect(heavyV.map((r) => r.x + 1)).toEqual(Array.from({ length: 9 }, (_, i) => l.x0 + (i + 1) * 10 * l.cellW));
+    expect(heavyV.map((r) => r.x + 1).sort((a, b) => a - b)).toEqual(Array.from({ length: 9 }, (_, i) => l.x0 + (96 - (9 - i) * 10) * l.cellW));
     const heavyH = rec.rects.filter((r) => r.h === 2 && r.w === l.chartW && r.fill === "#17191b" && r.x === l.x0 && r.y > l.y0 && r.y < l.y0 + l.chartH);
     expect(heavyH.map((r) => r.y + 1).sort((a, b) => b - a)).toEqual(Array.from({ length: 14 }, (_, i) => l.y0 + (144 - (i + 1) * 10) * l.cellH));
   });

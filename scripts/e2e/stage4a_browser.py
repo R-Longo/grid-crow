@@ -100,7 +100,7 @@ def desktop(p):
     for (c, r) in [(0, 0), (95, 143), (52, 62), (10, 100)]:
         center_on(page, c, r)
         x, y = client(page, c, r); page.mouse.move(x, y)
-        want = f"Stitch {c+1} of 96 · Row {144-r} of 144"
+        want = f"Stitch {96-c} of 96 · Row {144-r} of 144"
         check(f"desktop: hover ({c},{r}) shows '{want}'", status_where(page) == want, status_where(page))
     # drag paint, fast, long
     a, b2 = (52, 62), (74, 40)

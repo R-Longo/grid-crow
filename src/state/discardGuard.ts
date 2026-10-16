@@ -29,12 +29,14 @@ export function requestDiscard(
 }
 
 /** The wording shown in the confirmation. */
-export function discardMessage(changed: number, what: string): { title: string; text: string } {
+export function discardMessage(changed: number, what: string, sinceDownload = false): { title: string; text: string } {
   const n = Math.max(0, Math.floor(changed));
   const stitches = `${n.toLocaleString("en-US")} hand-edited ${n === 1 ? "stitch" : "stitches"}`;
+  // After a download, only what was edited since then is at risk: the rest is in the downloaded file.
+  const which = sinceDownload ? `${stitches} since your last download` : stitches;
   return {
     title: "Replace your edited chart?",
-    text: `${what} builds a new chart. Your ${stitches} and your undo history will be discarded, and GridCrow can't get them back.`,
+    text: `${what} builds a new chart. Your ${which} and your undo history will be discarded, and GridCrow can't get them back.`,
   };
 }
 
