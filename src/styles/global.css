@@ -1086,6 +1086,165 @@ legend {
   background: var(--cta-hover);
 }
 
+/* ---------- Two ways to begin ---------- */
+
+.start {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-4);
+}
+
+.start__cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.start__card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-height: 44px;
+  padding: var(--space-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--control);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.start__card input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.start__card:has(input:checked) {
+  border-color: var(--terracotta);
+  background: var(--selected-bg);
+}
+
+.start__card:has(input:focus-visible) {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.start__title {
+  font-weight: 700;
+}
+
+.start__text {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+@media (max-width: 420px) {
+  .start__cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Blank canvas: edit a yarn color ---------- */
+
+.coloredit {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.coloredit__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+}
+
+.coloredit__panel {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.coloredit__row {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.coloredit__label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.coloredit__picker {
+  width: 56px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: none;
+}
+
+.coloredit__hex {
+  min-height: 44px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--control);
+  color: var(--text);
+  font: inherit;
+  width: 8.5em;
+}
+
+.coloredit__warn {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text);
+}
+
+.coloredit__msg {
+  margin: 0;
+  min-height: 1.2em;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.coloredit__msg--error {
+  color: var(--terracotta);
+}
+
+.strengthen {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.strengthen__check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.strengthen__check input {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  accent-color: var(--terracotta);
+}
+
+.strengthen__help {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
 .download__check {
   display: flex;
   align-items: center;

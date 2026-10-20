@@ -61,13 +61,22 @@ export function stitchesOnSegment(a: Stitch, b: Stitch): Stitch[] {
   return out;
 }
 
-/** How many stitches differ between two matrices of the same size. */
+/**
+ * How many stitches differ between two matrices of the same size: a different palette index, or the same index whose
+ * palette color has since been changed (a recolored yarn).
+ */
 export function countDifferences(a: StitchMatrix, b: StitchMatrix): number {
   if (a.cols !== b.cols || a.rows !== b.rows) throw new RangeError("charts differ in size");
+  // Palette slots whose color differs between the two charts (none, unless a color was recolored).
+  const recolored = new Set<number>();
+  const shared = Math.min(a.palette.length, b.palette.length);
+  for (let i = 0; i < shared; i++) if (a.palette[i].hex.toLowerCase() !== b.palette[i].hex.toLowerCase()) recolored.add(i);
   let n = 0;
   for (let r = 0; r < a.rows; r++) {
-    if (a.cells[r] === b.cells[r]) continue;
-    for (let c = 0; c < a.cols; c++) if (a.cells[r][c] !== b.cells[r][c]) n++;
+    if (a.cells[r] === b.cells[r] && recolored.size === 0) continue;
+    const ra = a.cells[r];
+    const rb = b.cells[r];
+    for (let c = 0; c < a.cols; c++) if (ra[c] !== rb[c] || recolored.has(ra[c])) n++;
   }
   return n;
 }

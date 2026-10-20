@@ -180,3 +180,16 @@ Digital-first: the PNG stays the simplest download; the PDF is the flexible one 
 **Right-to-left numbering.** Tapestry rows are worked right to left on odd rows and left to right on even rows, so stitch 1 is at the RIGHT edge. Stitch numbers (hover label, PNG, PDF, tiled page ranges, heavy 10-lines and join ticks) now count from the right; row 1 is still the bottom. The picture itself is not mirrored. Printed note: "Odd rows: work right to left. Even rows: turn, work left to right."
 
 **Buttons.** Download PNG is Honey Gold #E8B84F; Download PDF is the terracotta of the main button. Service worker cache v22.
+
+## 14. Thin-line strengthening and Blank Canvas
+
+**Strengthen thin lines** (opt-in, 16 x 20 and larger). `src/engine/strengthen/strengthen.ts` runs BEFORE the unchanged converter: it finds dark strokes thinner than about one stitch, widens them to roughly one stitch (never fusing two close lines), darkens them to the stroke's own darkest color and drops specks. It works on a copy of about 8 pixels per stitch (small pictures are enlarged up to 4x). `assessPicture` looks at how much of the picture is plain light paper; when it is not (a painting, a dark background) the setup screen adds a plain-language caution next to the checkbox instead of hiding the option. Ticking it counts as a setting change (it asks before discarding hand edits). Tested on 15 pictures; helps most on single-line drawings, is about even on dense black-and-white art, and hurts on colorful paintings and dark-background art.
+
+**Blank Canvas (Start from Scratch).** An additional way to reach the SAME editor and exports.
+- Setup screen: two cards, "Convert an Image" (unchanged, default) and "Start from Scratch" (orientation and the same six sizes, then "Open Blank Canvas"). Switching with a drawing on screen asks first.
+- `src/engine/blank.ts`: an all-white `StitchMatrix` (every stitch holds palette index 0 = white) with a fixed ten-slot palette: white, black, red, blue, green, yellow, orange, brown, light gray, dark gray. Painting starts with black. Grid size comes from `buildGridSpec`, so the gauge and presets are the existing ones.
+- Colors: any slot can be changed. `engine/editor/recolor.ts` + `EditorSession.recolor`: the stitches keep their palette index and the slot gets a new color, so every stitch using it changes (one undo step; Reset restores the starting colors). A color another slot already has is refused with a plain explanation. The "Edit this color" panel says how many stitches change and, for slot 0, that it is the background. It only acts on the button, never while a color picker is being dragged.
+- `countDifferences` now also counts stitches whose yarn was recolored, so the discard warning and the download checkpoint notice a recolor.
+- Blank charts use gray grid lines (white would vanish on white stitches); the Original view is not offered; Reset wording says "blank canvas".
+- Exports are unchanged: unused colors are left out of the legend, so a blank canvas with three colors in use exports as three.
+- Tests: `blank.test.ts`, `editor/recolor.test.ts`, `state/strengthenChoice.test.ts`, `strengthen/strengthen.test.ts`; browser: `scripts/e2e/blank_browser.py`, `strengthen_browser.py`. Service worker cache v23.

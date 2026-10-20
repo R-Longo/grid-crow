@@ -3,8 +3,10 @@ import type { Stitch } from "./coords";
 import { floodFill } from "./fill";
 import { gestureStep, initialGesture } from "./gesture";
 import type { GestureEffect, GestureState, Mode, PointerKind } from "./gesture";
-import { History, applyEdit, makeEdit } from "./history";
+import { History, applyEdit, makeEdit, makeRecolorEdit } from "./history";
 import { countDifferences, isPaletteIndex, paintStitches, stitchesOnSegment } from "./paint";
+import { recolorSlot, stitchesOfSlot } from "./recolor";
+import type { RecolorResult } from "./recolor";
 
 /** What a one-finger / left-button gesture does in Draw mode. */
 export type Tool = "paint" | "fill" | "pick";
@@ -21,7 +23,7 @@ export type SessionEffect =
   | { type: "repaint"; stitches: Stitch[] }
   /** An action finished (or was undone/redone). `changed` = stitches that now differ from the converted chart;
    *  `stitches` = how many stitches this action itself touched. */
-  | { type: "committed"; action: "paint" | "fill" | "undo" | "redo"; changed: number; stitches: number }
+  | { type: "committed"; action: "paint" | "fill" | "recolor" | "undo" | "redo"; changed: number; stitches: number }
   /** The eyedropper chose a color; painting continues with it. */
   | { type: "picked"; color: number }
   | { type: "hover"; stitch: Stitch }
@@ -69,6 +71,26 @@ export class EditorSession {
   /** Stitches that differ from the converted chart. */
   changedCount(): number {
     return countDifferences(this.matrix, this.converted);
+  }
+
+  /**
+   * Change the yarn color of a palette slot: every stitch that uses it changes with it, as one undo step. Refused (and
+   * nothing changes) while a stroke is in progress, for a color that is not valid, or one another slot already has.
+   */
+  recolor(slot: number, hex: string): { result: RecolorResult; effects: SessionEffect[] } {
+    if (this.busy) return { result: { ok: false, reason: "same" }, effects: [] };
+    const result = recolorSlot(this.matrix, slot, hex);
+    if (!result.ok) return { result, effects: [] };
+    this.matrix = result.matrix;
+    this.history.push(makeRecolorEdit(slot, result.from, result.to));
+    const stitches = stitchesOfSlot(this.matrix, slot);
+    return {
+      result,
+      effects: [
+        { type: "repaint", stitches },
+        { type: "committed", action: "recolor", changed: this.changedCount(), stitches: stitches.length },
+      ],
+    };
   }
 
   /** Throw away every edit. The converted chart itself is never touched. */

@@ -6,9 +6,12 @@ import type { DecodedImage } from "../engine/convert/decode";
 import { convertInBackground } from "../engine/convert/run";
 import { ConversionError } from "../engine/convert/types";
 import type { CropState, StitchMatrix } from "../engine/convert/types";
+import { BLANK_START_COLOR, makeBlankMatrix } from "../engine/blank";
 import { buildGridSpec } from "../engine/geometry";
+import { assessPicture, strengthenThinLines } from "../engine/strengthen/strengthen";
 import { useDiscardGuard } from "../state/useDiscardGuard";
 import { settingsReducer } from "../state/setupSettings";
+import { strengthenActive, strengthenOffered } from "../state/strengthenChoice";
 import type { SettingsAction } from "../state/setupSettings";
 import type { SetupSettings } from "../types";
 import { ChartView } from "./ChartView";
@@ -26,13 +29,17 @@ export function SetupScreen() {
   const [crop, setCrop] = useState<CropState>(DEFAULT_CROP);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "working" | "done" | "error">("idle");
-  const [result, setResult] = useState<{ matrix: StitchMatrix; crop: CropState; aspect: number } | null>(null);
+  const [result, setResult] = useState<{ matrix: StitchMatrix; crop: CropState; aspect: number; blank: boolean } | null>(null);
+  // How this chart is started: from a picture, or from a blank grid.
+  const [start, setStart] = useState<"image" | "scratch">("image");
   const [runError, setRunError] = useState<string | null>(null);
   const requestId = useRef(0);
   // How many stitches the person has hand-edited in the chart on screen (reported by the chart). While it is above zero,
   // anything that would replace the chart asks first, and closing the tab asks too.
   const [edited, setEdited] = useState(0);
   const [sinceDownload, setSinceDownload] = useState(false);
+  // "Strengthen thin lines": ticked by the person; only has an effect on sizes where it is offered.
+  const [strengthen, setStrengthen] = useState(false);
   const guard = useDiscardGuard(edited);
 
   // Anything the chart depends on changing makes an old result stale, so it is cleared.
@@ -60,6 +67,16 @@ export function SetupScreen() {
   const grid = useMemo(() => buildGridSpec(settings), [settings]);
   // Crop to the finished tapestry's PHYSICAL proportions (not stitches ÷ rows).
   const aspect = physicalAspect(grid.widthInches, grid.heightInches);
+  const offerStrengthen = strengthenOffered(grid.cols);
+  // A quick look at the picture: is it a drawing on light paper (where this helps most)? Worked out once per picture.
+  const lineArt = useMemo(() => {
+    if (!image) return null;
+    try {
+      return assessPicture(bitmapToRaster(image.bitmap)).lineArt;
+    } catch {
+      return null;
+    }
+  }, [image]);
 
   // Decode the chosen file in the browser; release it when replaced or removed.
   useEffect(() => {
@@ -103,10 +120,15 @@ export function SetupScreen() {
     setResult(null);
     setRunError(null);
     try {
-      const raster = bitmapToRaster(image.bitmap);
+      let raster = bitmapToRaster(image.bitmap);
+      if (strengthenActive(strengthen, grid.cols)) {
+        // Widen the thin dark lines first; the converter itself is unchanged and just sees a different picture.
+        await new Promise((resolve) => setTimeout(resolve, 0)); // let "Building your grid..." paint first
+        raster = strengthenThinLines(raster, { cols: grid.cols, aspect }).raster;
+      }
       const matrix = await convertInBackground(raster, crop, grid);
       if (id !== requestId.current) return; // settings changed while working
-      setResult({ matrix, crop, aspect });
+      setResult({ matrix, crop, aspect, blank: false });
       setStatus("done");
     } catch (e) {
       if (id !== requestId.current) return;
@@ -115,9 +137,52 @@ export function SetupScreen() {
     }
   };
 
+  // Start from Scratch: the same editor on an all-white grid of the chosen size.
+  const openBlank = () => {
+    requestId.current++;
+    setRunError(null);
+    setStatus("done");
+    setResult({ matrix: makeBlankMatrix(grid.cols, grid.rows), crop: DEFAULT_CROP, aspect, blank: true });
+  };
+
+  const chooseStart = (next: "image" | "scratch") => {
+    if (next === start) return;
+    guard.request(next === "scratch" ? "Starting from scratch" : "Switching to a picture", () => {
+      invalidate();
+      setStart(next);
+    });
+  };
+  const scratch = start === "scratch";
+
   return (
     <main>
-      <UploadZone
+      <fieldset className="start">
+        <legend>How do you want to begin?</legend>
+        <div className="start__cards">
+          {(
+            [
+              { id: "image", title: "Convert an Image", text: "Turn a picture into a stitch chart.", icon: "image" },
+              { id: "scratch", title: "Start from Scratch", text: "Draw on a blank stitch grid.", icon: "pencil" },
+            ] as const
+          ).map((c) => (
+            <label className="start__card" key={c.id}>
+              <input
+                type="radio"
+                name="start"
+                value={c.id}
+                data-testid={`start-${c.id}`}
+                checked={start === c.id}
+                onChange={() => chooseStart(c.id)}
+              />
+              <Icon name={c.icon} size={24} />
+              <span className="start__title">{c.title}</span>
+              <span className="start__text">{c.text}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      {!scratch && <UploadZone
         file={file}
         onFileChange={chooseFile}
         externalError={uploadError}
@@ -140,7 +205,7 @@ export function SetupScreen() {
             </p>
           )
         }
-      />
+      />}
 
       <div className="fields">
         <OptionGroup
@@ -161,26 +226,67 @@ export function SetupScreen() {
           <SizeSummary grid={grid} />
         </div>
 
-        <OptionGroup
-          legend="Maximum yarn colors"
-          options={COLOR_OPTIONS}
-          value={settings.maxColors}
-          onChange={(v) => update("maxColors", v)}
-          lead={<Icon name="palette" size={24} />}
-        />
+        {!scratch && offerStrengthen && (
+          <fieldset className="strengthen">
+            <legend>Thin lines</legend>
+            <label className="strengthen__check">
+              <input
+                type="checkbox"
+                data-testid="strengthen"
+                checked={strengthen}
+                onChange={(e) => {
+                  const next = e.target.checked;
+                  guard.request("Changing thin-line strengthening", () => {
+                    invalidate();
+                    setStrengthen(next);
+                  });
+                }}
+              />
+              <span>Strengthen thin lines</span>
+            </label>
+            <p className="strengthen__help" data-testid="strengthen-help">
+              Makes thin dark pen lines about one stitch wide so they don't fade away. Made for drawings.
+              {lineArt === false && " This picture is colorful or has a dark background, so check the chart and turn this off if it looks worse."}
+            </p>
+          </fieldset>
+        )}
+
+        {!scratch && (
+          <OptionGroup
+            legend="Maximum yarn colors"
+            options={COLOR_OPTIONS}
+            value={settings.maxColors}
+            onChange={(v) => update("maxColors", v)}
+            lead={<Icon name="palette" size={24} />}
+          />
+        )}
       </div>
 
       <div className="cta">
-        <button
-          type="button"
-          className="btn btn--primary"
-          disabled={!image || status === "working"}
-          onClick={() => guard.request("Building a new grid", create)}
-        >
-          {status === "working" ? "Building your grid…" : "Create My Crochet Grid"}
-          <Icon name="arrow" size={20} />
-        </button>
-        {!file && <p className="cta-hint">Add a picture to continue.</p>}
+        {scratch ? (
+          <button
+            type="button"
+            className="btn btn--primary"
+            data-testid="open-blank"
+            onClick={() => guard.request("Starting a new canvas", openBlank)}
+          >
+            Open Blank Canvas
+            <Icon name="arrow" size={20} />
+          </button>
+        ) : (
+          <>
+            <button
+              type="button"
+              className="btn btn--primary"
+              disabled={!image || status === "working"}
+              onClick={() => guard.request("Building a new grid", create)}
+            >
+              {status === "working" ? "Building your grid…" : "Create My Crochet Grid"}
+              <Icon name="arrow" size={20} />
+            </button>
+            {!file && <p className="cta-hint">Add a picture to continue.</p>}
+          </>
+        )}
 
         {status === "error" && runError && (
           <p className="upload__error" role="alert">
@@ -196,6 +302,8 @@ export function SetupScreen() {
           image={image}
           crop={result.crop}
           aspect={result.aspect}
+          blank={result.blank}
+          startColor={result.blank ? BLANK_START_COLOR : 0}
           onEditedChange={(n, afterDownload) => {
             setEdited(n);
             setSinceDownload(afterDownload);

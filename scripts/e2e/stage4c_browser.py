@@ -16,6 +16,9 @@ def pick_radio(page, value):
         try:
             page.locator(f'input[type=radio][value="{value}"]').check(force=True); return
         except Exception:
+            # When the app asks "replace your edited chart?" the box stays unchecked until it is answered: that is not a failure,
+            # and clicking again could land on one of the dialog's buttons.
+            if page.locator("dialog.discard[open]").count(): return
             time.sleep(0.5)
 
 def setup(page, size="24x32", colors="10"):

@@ -18,7 +18,9 @@ def check(name, ok, detail=""):
 def pick_radio(page, value):
     for attempt in range(4):
         try: page.locator(f'input[type=radio][value="{value}"]').check(force=True); return
-        except Exception: time.sleep(0.5)
+        except Exception:
+            if page.locator("dialog.discard[open]").count(): return  # the app is asking first; a second click could hit its buttons
+            time.sleep(0.5)
 def setup(page):
     page.goto(URL); page.wait_for_load_state("networkidle")
     page.set_input_files("input[type=file]", IMG)

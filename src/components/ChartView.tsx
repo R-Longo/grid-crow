@@ -24,7 +24,10 @@ import type { PointerInput, SessionEffect } from "../engine/editor/session";
 import { drawChart, drawStitches } from "./chartPaint";
 import { Icon } from "./Icon";
 import type { IconName } from "./Icon";
+import { ColorEditor } from "./ColorEditor";
 import { ConfirmReset } from "./ConfirmReset";
+import { BLANK_BACKGROUND_SLOT } from "../engine/blank";
+import type { RecolorResult } from "../engine/editor/recolor";
 import { DownloadPanel } from "./DownloadPanel";
 import type { DownloadChoices, DownloadNote } from "./DownloadPanel";
 import { buildPatternModel, patternFileName } from "../engine/export/pattern";
@@ -55,6 +58,16 @@ function useMedia(query: string): boolean {
 /** A stitch is wider than a row is tall: 1/4 in across, 1/4.5 in high. */
 const CELL_ASPECT = ROWS_PER_INCH / STITCHES_PER_INCH; // 1.125
 
+// Grid lines are guides, never stitch colors. Light on a photo chart; gray on a blank canvas, where the stitches start white.
+const LIGHT_LINES = { light: "rgba(255,255,255,0.16)", heavy: "rgba(255,255,255,0.4)" };
+const GRAY_LINES = { light: "rgba(110,110,110,0.45)", heavy: "rgba(70,70,70,0.8)" };
+
+function newSession(converted: StitchMatrix, startColor: number): EditorSession {
+  const session = new EditorSession(converted);
+  if (startColor > 0 && startColor < converted.palette.length) session.setActive(startColor);
+  return session;
+}
+
 interface ChartViewProps {
   matrix: StitchMatrix;
   image: DecodedImage | null;
@@ -65,6 +78,10 @@ interface ChartViewProps {
    * chart goes away). After a download, only stitches edited since then count; `afterDownload` says which wording applies.
    */
   onEditedChange?: (unsaved: number, afterDownload: boolean) => void;
+  /** A blank canvas (no picture behind it): yarn colors can be changed, the Original view is not offered, grid lines are gray. */
+  blank?: boolean;
+  /** The yarn color painting starts with (a blank canvas starts with black, not the white background). */
+  startColor?: number;
 }
 
 /**
@@ -75,7 +92,7 @@ interface ChartViewProps {
  * conversion: `matrix` below starts as a copy of the converted chart and only changes by painting stitches with a
  * color the chart already has.
  */
-export function ChartView({ matrix: converted, image, crop, aspect, onEditedChange }: ChartViewProps) {
+export function ChartView({ matrix: converted, image, crop, aspect, onEditedChange, blank = false, startColor = 0 }: ChartViewProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -112,7 +129,7 @@ export function ChartView({ matrix: converted, image, crop, aspect, onEditedChan
   const [lines, setLines] = useState(true);
   const [width, setWidth] = useState(0);
   const [mode, setMode] = useState<Mode>("draw");
-  const [active, setActive] = useState(0);
+  const [active, setActive] = useState(startColor);
   const [tool, setTool] = useState<Tool>("paint");
   const [hover, setHover] = useState<Stitch | null>(null);
   const [matrix, setMatrix] = useState<StitchMatrix>(converted);
@@ -132,7 +149,7 @@ export function ChartView({ matrix: converted, image, crop, aspect, onEditedChan
   // gesture in progress. A new conversion starts a new session.
   const sessionRef = useRef<EditorSession | null>(null);
   if (!sessionRef.current || sessionRef.current.converted !== converted)
-    sessionRef.current = new EditorSession(converted);
+    sessionRef.current = newSession(converted, startColor);
   const session = sessionRef.current;
   session.mode = mode;
   session.tool = tool;
@@ -164,7 +181,7 @@ export function ChartView({ matrix: converted, image, crop, aspect, onEditedChan
     setChanged(0);
     setConfirmReset(false);
     setFitted(true); // a new chart always opens showing the whole thing
-    setActive((a) => (a < converted.palette.length ? a : 0));
+    setActive(startColor < converted.palette.length ? startColor : 0);
     setTool("paint");
     setDrawVersion((v) => v + 1);
   }, [converted]);
@@ -240,15 +257,16 @@ export function ChartView({ matrix: converted, image, crop, aspect, onEditedChan
     if (!ctx) return;
     ctx.clearRect(0, 0, pxW, pxH);
     if (!lines || cellW < 4) return; // lines would swamp very small stitches
+    const tone = blank ? GRAY_LINES : LIGHT_LINES;
     for (let c = 0; c <= matrix.cols; c++) {
-      ctx.fillStyle = c % 10 === 0 ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.16)";
+      ctx.fillStyle = c % 10 === 0 ? tone.heavy : tone.light;
       ctx.fillRect(Math.min(pxW - 1, Math.round(c * cellW)), 0, 1, pxH);
     }
     for (let r = 0; r <= matrix.rows; r++) {
-      ctx.fillStyle = r % 10 === 0 ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.16)";
+      ctx.fillStyle = r % 10 === 0 ? tone.heavy : tone.light;
       ctx.fillRect(0, Math.min(pxH - 1, Math.round(r * cellH)), pxW, 1);
     }
-  }, [lines, matrix.cols, matrix.rows, cellW, cellH, pxW, pxH, compact]);
+  }, [lines, blank, matrix.cols, matrix.rows, cellW, cellH, pxW, pxH, compact]);
 
   // Original (cropped) picture, for comparison only. Read-only: never part of the chart, never edited.
   useEffect(() => {
@@ -595,8 +613,18 @@ export function ChartView({ matrix: converted, image, crop, aspect, onEditedChan
     setMatrix(converted);
     setChanged(0);
     setDrawVersion((v) => v + 1);
-    setNote("Reset to the converted chart.");
+    setNote(blank ? "Reset to the blank canvas." : "Reset to the converted chart.");
     closeConfirm(true);
+  };
+
+  // Blank canvas: change the yarn color of the selected slot. Every stitch using it changes (one undo step).
+  const recolorActive = (hex: string): RecolorResult => {
+    const { result, effects } = sessionRef.current!.recolor(active, hex);
+    if (result.ok) {
+      applyEffects(effects);
+      setNote(`Recolored to ${result.to.toUpperCase()}.`);
+    }
+    return result;
   };
 
   const activeColor = matrix.palette[active] ?? matrix.palette[0];
@@ -626,12 +654,13 @@ export function ChartView({ matrix: converted, image, crop, aspect, onEditedChan
           : selectedTool === "pick"
             ? "Tap a stitch to copy its color, then paint."
             : "Drag to move around. Two fingers always pan and zoom.";
+  const helpFull = blank && view === "chart" ? `${help} Change any yarn color with Edit this color.` : help;
   const summary = `${matrix.cols} stitches × ${matrix.rows} rows · ${matrix.palette.length} ${
     matrix.palette.length === 1 ? "color" : "colors"
   }`;
 
   // ---- pieces shared by the wide and the compact layout --------------------------------------------------------
-  const viewToggle = (
+  const viewToggle = blank ? null : (
     <div className="chart__toggle" role="group" aria-label="What to show">
       <button type="button" aria-pressed={view === "chart"} onClick={() => setView("chart")}>
         Chart
@@ -673,10 +702,20 @@ export function ChartView({ matrix: converted, image, crop, aspect, onEditedChan
       </button>
     </>
   );
+  const colorEditor = blank ? (
+    <ColorEditor
+      slot={active}
+      color={matrix.palette[active] ?? matrix.palette[0]}
+      count={counts[active] ?? 0}
+      isBackground={active === BLANK_BACKGROUND_SLOT}
+      onApply={recolorActive}
+      describeSlot={(i) => `${matrix.palette[i].hex.toUpperCase()}${i === BLANK_BACKGROUND_SLOT ? ", your background" : ""}`}
+    />
+  ) : null;
   const palette = (
     <ul ref={paletteRef} className="chart__palette" aria-labelledby={colorsId}>
       {matrix.palette.map((p, i) => (
-        <li key={p.hex}>
+        <li key={blank ? i : p.hex}>
           <button
             type="button"
             className="chart__color"
@@ -836,10 +875,10 @@ export function ChartView({ matrix: converted, image, crop, aspect, onEditedChan
         }}
       >
         <Icon name="reset" size={18} />
-        Reset to converted
+        {blank ? "Reset canvas" : "Reset to converted"}
       </button>
       {confirmReset && (
-        <ConfirmReset changed={changed} onConfirm={resetToConverted} onCancel={() => closeConfirm(false)} />
+        <ConfirmReset changed={changed} blank={blank} onConfirm={resetToConverted} onCancel={() => closeConfirm(false)} />
       )}
     </>
   );
@@ -911,12 +950,13 @@ export function ChartView({ matrix: converted, image, crop, aspect, onEditedChan
           {optionsOpen && (
             <div ref={optionsRef} id={optionsId} className="chart__options" role="region" aria-label="Chart options">
               <p className="chart__summary">{summary}</p>
-              <div className="chart__options-row">{viewToggle}</div>
+              {viewToggle && <div className="chart__options-row">{viewToggle}</div>}
+              {colorEditor && <div className="chart__options-row">{colorEditor}</div>}
               <div className="chart__options-row">{gridCheck}</div>
               <div className="chart__options-row chart__zoombar chart__zoom">{zoomControls}</div>
               <div className="chart__edit chart__options-row">{utility}</div>
               <p className="chart__help" data-testid="chart-help">
-                {help}
+                {helpFull}
               </p>
             </div>
           )}
@@ -983,6 +1023,7 @@ export function ChartView({ matrix: converted, image, crop, aspect, onEditedChan
               Yarn colors
             </h3>
             {palette}
+            {colorEditor}
           </div>
           <div className="chart__downloads">
             <h3 className="chart__heading" id={downloadId}>
@@ -1000,7 +1041,7 @@ export function ChartView({ matrix: converted, image, crop, aspect, onEditedChan
           </div>
           <div className="chart__edit">{utility}</div>
           <p className="chart__help" data-testid="chart-help">
-            {help}
+            {helpFull}
           </p>
         </div>
       </div>
