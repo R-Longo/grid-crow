@@ -27,7 +27,7 @@ def run(p):
         check(f"{tag}: single column in the original order (upload, orientation, size, colors, Create)", all(v is not None for v in flow) and flow == sorted(flow), str([round(v) for v in flow if v is not None]))
         check(f"{tag}: nothing is beside anything else (all controls share the same column)", all(r and abs(r["x"] - ori["x"]) < 40 for r in (up, siz, colr)) if ori else False)
         check(f"{tag}: setup is centred", abs((panel["x"] + panel["w"] / 2) - w / 2) < 2, f"{panel['x']:.0f}+{panel['w']:.0f}")
-        check(f"{tag}: setup width is modest on big screens and uses the screen on phones", (panel["w"] <= 33 * 16 + 1) and (w > 560 or panel["w"] >= w - 24), f"{panel['w']:.0f}")
+        check(f"{tag}: setup width is modest on big screens and uses the screen on phones", (panel["w"] <= (700 if w >= 900 else 33 * 16) + 1) and (w > 560 or panel["w"] >= w - 24), f"{panel['w']:.0f}")
         check(f"{tag}: picture setup has no horizontal overflow", not overflow(pg))
         pg.locator("[data-testid=start-scratch]").click(force=True); time.sleep(0.4)
         check(f"{tag}: Blank Canvas setup has no upload/crop column", pg.locator(".setup__pic").count() == 0 and pg.locator("input[type=file]").count() == 0)

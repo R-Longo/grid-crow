@@ -2084,6 +2084,17 @@ legend {
   margin-inline: auto;
 }
 
+/* Laptop and desktop: a roomier card (about 700px) around the same single-column setup, controls about 33.5rem wide. */
+@media (min-width: 56.25rem) {
+  .panel {
+    width: min(100%, 43.75rem);
+    padding-inline: 5rem;
+  }
+  .setup__body {
+    max-width: 33.5rem;
+  }
+}
+
 /* ---------- Responsive editor (Phase 2) ----------
    Once a chart is open the editor is a workspace the size of the screen (under the setup bar). The chart is fitted to
    the room its container actually has (measured), never to a guessed window height. The shape of the surroundings
@@ -2094,6 +2105,11 @@ legend {
 
 .panel:has(.chart) {
   width: min(100%, 100rem);
+}
+@media (min-width: 56.25rem) {
+  .panel:has(.chart) {
+    padding-inline: var(--space-5);
+  }
 }
 
 .setup__body {
