@@ -193,3 +193,11 @@ Digital-first: the PNG stays the simplest download; the PDF is the flexible one 
 - Blank charts use gray grid lines (white would vanish on white stitches); the Original view is not offered; Reset wording says "blank canvas".
 - Exports are unchanged: unused colors are left out of the legend, so a blank canvas with three colors in use exports as three.
 - Tests: `blank.test.ts`, `editor/recolor.test.ts`, `state/strengthenChoice.test.ts`, `strengthen/strengthen.test.ts`; browser: `scripts/e2e/blank_browser.py`, `strengthen_browser.py`. Service worker cache v23.
+
+## 15. Responsive editor (rulers, highlight, phone layout)
+
+- Rulers: stitch numbers above the chart (stitch 1 at the RIGHT, counting up leftward) and row numbers beside it (row 1 at the bottom, with a direction arrow: odd rows right to left, even rows left to right). Drawn on two small canvases (`components/Rulers.tsx`) from pure label math (`engine/editor/rulers.ts`), repainted on scroll one animation frame at a time; only visible labels, thinned to every 2nd/5th/10th when zoomed out, bold at multiples of 10. No numbers inside stitches.
+- Highlight: a translucent gold row and column strip under the mouse or finger; the matching ruler numbers turn gold. Status line ends with the working direction.
+- Phone: once a chart (blank or converted) is open the setup folds into a one-line bar ("Blank canvas · 12 × 16 in · Change") and the editor scrolls into view; Change/Hide toggles it. Page, panel and chart padding are tighter on phones so the chart is wider. Fit uses the room left after the rulers; it refits on rotation.
+- Unchanged: converter, color reduction, stitch data, undo/redo, painting, fill, palette editing, PNG/PDF export.
+- Browser checks: `scripts/e2e/rulers_browser.py`, `scripts/e2e/phone_editor_browser.py`.

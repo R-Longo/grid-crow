@@ -87,7 +87,7 @@ export function fitZoom(cols: number, rows: number, viewW: number, viewH: number
  */
 export function previewHeight(windowH: number, compact = false, side = false): number {
   // `side`: a phone held sideways, where the dock sits beside the chart and only the header and caption are above and below it.
-  return Math.min(1100, Math.max(side ? 200 : 260, windowH - (side ? 150 : compact ? 330 : 280)));
+  return Math.min(1100, Math.max(side ? 200 : 260, windowH - (side ? 150 : compact ? 300 : 280)));
 }
 
 export function clampZoom(z: number, min = MIN_ZOOM, max = MAX_ZOOM): number {

@@ -101,7 +101,7 @@ def desktop(p):
         center_on(page, c, r)
         x, y = client(page, c, r); page.mouse.move(x, y)
         want = f"Stitch {96-c} of 96 · Row {144-r} of 144"
-        check(f"desktop: hover ({c},{r}) shows '{want}'", status_where(page) == want, status_where(page))
+        check(f"desktop: hover ({c},{r}) shows '{want}' (then the working direction)", status_where(page).startswith(want + " · "), status_where(page))
     # drag paint, fast, long
     a, b2 = (52, 62), (74, 40)
     center_on(page, 63, 51)

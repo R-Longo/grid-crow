@@ -14,7 +14,7 @@ import { settingsReducer } from "../state/setupSettings";
 import { strengthenActive, strengthenOffered } from "../state/strengthenChoice";
 import type { SettingsAction } from "../state/setupSettings";
 import type { SetupSettings } from "../types";
-import { ChartView } from "./ChartView";
+import { ChartView, COMPACT_QUERY, useMedia } from "./ChartView";
 import { ConfirmDiscard } from "./ConfirmDiscard";
 import { CropPreview } from "./CropPreview";
 import { Icon } from "./Icon";
@@ -41,6 +41,10 @@ export function SetupScreen() {
   // "Strengthen thin lines": ticked by the person; only has an effect on sizes where it is offered.
   const [strengthen, setStrengthen] = useState(false);
   const guard = useDiscardGuard(edited);
+  // On a phone the setup folds away into a one-line bar once a chart is open, so the chart gets the screen.
+  const compact = useMedia(COMPACT_QUERY);
+  const [setupOpen, setSetupOpen] = useState(true);
+  const barRef = useRef<HTMLDivElement>(null);
 
   // Anything the chart depends on changing makes an old result stale, so it is cleared.
   const invalidate = useCallback(() => {
@@ -154,15 +158,33 @@ export function SetupScreen() {
   };
   const scratch = start === "scratch";
 
+  // A new chart folds the setup away (phones) and brings the editor to the top of the screen; no chart, setup open.
+  const hasResult = result !== null;
+  useEffect(() => {
+    if (!hasResult) {
+      setSetupOpen(true);
+      return;
+    }
+    setSetupOpen(false);
+    const t = window.setTimeout(() => barRef.current?.scrollIntoView({ block: "start" }), 50);
+    return () => window.clearTimeout(t);
+  }, [result, hasResult]);
+  const folded = compact && hasResult && !setupOpen;
+  const toggleSetup = () => {
+    setSetupOpen((o) => !o);
+    window.setTimeout(() => barRef.current?.scrollIntoView({ block: "start" }), 50);
+  };
+
   return (
     <main>
+      <div hidden={folded} className="setup__body">
       <fieldset className="start">
         <legend>How do you want to begin?</legend>
         <div className="start__cards">
           {(
             [
-              { id: "image", title: "Convert an Image", text: "Turn a picture into a stitch chart.", icon: "image" },
-              { id: "scratch", title: "Start from Scratch", text: "Draw on a blank stitch grid.", icon: "pencil" },
+              { id: "image", title: "Convert an Image", icon: "image" },
+              { id: "scratch", title: "Draw from Scratch", icon: "pencil" },
             ] as const
           ).map((c) => (
             <label className="start__card" key={c.id}>
@@ -174,9 +196,8 @@ export function SetupScreen() {
                 checked={start === c.id}
                 onChange={() => chooseStart(c.id)}
               />
-              <Icon name={c.icon} size={24} />
+              <Icon name={c.icon} size={20} />
               <span className="start__title">{c.title}</span>
-              <span className="start__text">{c.text}</span>
             </label>
           ))}
         </div>
@@ -295,6 +316,24 @@ export function SetupScreen() {
         )}
         <p className="made-for">Free to use. Made for crocheters. ♡</p>
       </div>
+      </div>
+
+      {result && compact && (
+        <div ref={barRef} className="setupbar" data-testid="setup-bar">
+          <span className="setupbar__text">
+            {result.blank ? "Blank canvas" : "Your picture"} · {grid.widthInches} × {grid.heightInches} in
+          </span>
+          <button
+            type="button"
+            className="setupbar__btn"
+            data-testid="setup-change"
+            aria-expanded={!folded}
+            onClick={toggleSetup}
+          >
+            {folded ? "Change" : "Hide"}
+          </button>
+        </div>
+      )}
 
       {result && (
         <ChartView

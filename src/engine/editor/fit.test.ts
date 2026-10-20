@@ -97,7 +97,7 @@ describe("previewHeight", () => {
     expect(previewHeight(300)).toBe(260);
     expect(previewHeight(4000)).toBe(1100);
     // the compact (phone) layout also has a header and a dock to make room for
-    expect(previewHeight(844, true)).toBe(514);
+    expect(previewHeight(844, true)).toBe(544);
     expect(previewHeight(1000, true)).toBeLessThan(previewHeight(1000));
     expect(previewHeight(500, true)).toBe(260);
     expect(previewHeight(390, true, true)).toBe(240); // sideways phone: dock beside the chart

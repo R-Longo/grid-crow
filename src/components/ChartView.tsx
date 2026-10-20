@@ -15,6 +15,7 @@ import {
   scrollAfterZoom,
   stitchLabel,
 } from "../engine/editor/coords";
+import { cellEdge } from "../engine/editor/coords";
 import type { ChartLayout, Stitch } from "../engine/editor/coords";
 import type { Mode } from "../engine/editor/gesture";
 import { colorCounts } from "../engine/editor/paint";
@@ -23,6 +24,8 @@ import type { Tool } from "../engine/editor/session";
 import type { PointerInput, SessionEffect } from "../engine/editor/session";
 import { drawChart, drawStitches } from "./chartPaint";
 import { Icon } from "./Icon";
+import { Rulers, RULER_H, gutterWidth } from "./Rulers";
+import { directionLabel } from "../engine/editor/rulers";
 import type { IconName } from "./Icon";
 import { ColorEditor } from "./ColorEditor";
 import { ConfirmReset } from "./ConfirmReset";
@@ -38,12 +41,12 @@ import type { ExportCheckpoint } from "../state/exportCheckpoint";
 import { tiledPageCount } from "../engine/export/pdf/tiled";
 
 /** Phones and narrow tablets get the compact editor: header, chart, then a bottom dock with the tools and yarn colors. */
-const COMPACT_QUERY = "(max-width: 56.24rem)";
+export const COMPACT_QUERY = "(max-width: 56.24rem)";
 
 /** A phone held sideways is short and wide: the dock moves to the right of the chart instead of under it. */
 const SIDE_QUERY = "(max-width: 56.24rem) and (max-height: 34rem) and (min-width: 36rem)";
 
-function useMedia(query: string): boolean {
+export function useMedia(query: string): boolean {
   const [matches, setMatches] = useState(() => typeof window !== "undefined" && window.matchMedia(query).matches);
   useEffect(() => {
     const mq = window.matchMedia(query);
@@ -92,7 +95,15 @@ interface ChartViewProps {
  * conversion: `matrix` below starts as a copy of the converted chart and only changes by painting stitches with a
  * color the chart already has.
  */
-export function ChartView({ matrix: converted, image, crop, aspect, onEditedChange, blank = false, startColor = 0 }: ChartViewProps) {
+export function ChartView({
+  matrix: converted,
+  image,
+  crop,
+  aspect,
+  onEditedChange,
+  blank = false,
+  startColor = 0,
+}: ChartViewProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -108,7 +119,8 @@ export function ChartView({ matrix: converted, image, crop, aspect, onEditedChan
   const compact = useMedia(COMPACT_QUERY);
   const side = useMedia(SIDE_QUERY);
   const [winH, setWinH] = useState(() => (typeof window === "undefined" ? 800 : window.innerHeight));
-  const viewH = previewHeight(winH, compact, side);
+  const viewH = previewHeight(winH, compact, side) - RULER_H; // the stitch-number ruler takes its own strip above the box
+  const gutter = gutterWidth(compact);
   const [optionsOpen, setOptionsOpen] = useState(false);
   const optionsBtnRef = useRef<HTMLButtonElement>(null);
   const optionsRef = useRef<HTMLDivElement>(null);
@@ -212,13 +224,13 @@ export function ChartView({ matrix: converted, image, crop, aspect, onEditedChan
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
-    const measure = () => setWidth(Math.max(0, el.clientWidth - 2)); // minus the scroll box's border
+    const measure = () => setWidth(Math.max(0, el.clientWidth - 2 - gutter)); // minus the scroll box's border
     measure();
     if (typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [compact]); // the measured element is a new one when the layout switches
+  }, [compact, gutter]); // the measured element is a new one when the layout switches
 
   // Zoom 1 = the chart is as wide as the preview. The "fit" zoom shows the whole chart, all four edges, in a preview of
   // this width and height (it is below 1 when the chart is taller than the preview). It is the slider's minimum.
@@ -709,7 +721,9 @@ export function ChartView({ matrix: converted, image, crop, aspect, onEditedChan
       count={counts[active] ?? 0}
       isBackground={active === BLANK_BACKGROUND_SLOT}
       onApply={recolorActive}
-      describeSlot={(i) => `${matrix.palette[i].hex.toUpperCase()}${i === BLANK_BACKGROUND_SLOT ? ", your background" : ""}`}
+      describeSlot={(i) =>
+        `${matrix.palette[i].hex.toUpperCase()}${i === BLANK_BACKGROUND_SLOT ? ", your background" : ""}`
+      }
     />
   ) : null;
   const palette = (
@@ -740,7 +754,7 @@ export function ChartView({ matrix: converted, image, crop, aspect, onEditedChan
       </span>
       <span className="chart__where">
         {label
-          ? `Stitch ${label.stitch} · Row ${label.row}`
+          ? `Stitch ${label.stitch} · Row ${label.row} · ${directionLabel(label.row)}`
           : `${matrix.cols} × ${matrix.rows} · ${matrix.palette.length} colors`}
       </span>
     </p>
@@ -757,54 +771,88 @@ export function ChartView({ matrix: converted, image, crop, aspect, onEditedChan
       </span>
       <span className="chart__where">
         {label
-          ? `Stitch ${label.stitch} of ${matrix.cols} · Row ${label.row} of ${matrix.rows}`
+          ? `Stitch ${label.stitch} of ${matrix.cols} · Row ${label.row} of ${matrix.rows} · ${directionLabel(label.row)}`
           : "Move over the chart to see stitch numbers"}
       </span>
     </p>
   );
   const chartBox = (
     <div ref={wrapRef} className="chart__wrap">
-      <div
-        ref={scrollRef}
-        className="chart__scroll"
-        // The box is as big as the chart, up to the room there is; a chart that fits is shown whole, with no scrollbars.
-        style={pxW ? { width: Math.min(width, pxW) + 2, height: Math.min(viewH, pxH + 2) } : undefined}
-      >
+      <div className="chart__frame" style={{ gridTemplateColumns: `${gutter}px auto` }}>
+        <Rulers
+          scrollRef={scrollRef}
+          cols={matrix.cols}
+          rows={matrix.rows}
+          cellW={cellW}
+          cellH={cellH}
+          gutter={gutter}
+          hover={view === "chart" ? hover : null}
+          hidden={view !== "chart"}
+        />
         <div
-          ref={stageRef}
-          className={`chart__stage${view === "chart" ? ` chart__stage--${mode}${mode === "draw" && tool !== "paint" ? ` chart__stage--${tool}` : ""}` : ""}`}
-          style={{ width: pxW || undefined, height: pxH || undefined }}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerCancel={onPointerCancel}
-          onPointerEnter={() => {
-            overRef.current = true;
-          }}
-          onPointerLeave={() => {
-            overRef.current = false;
-            setHover(null);
-          }}
-          onContextMenu={(e) => {
-            if (view === "chart") e.preventDefault();
-          }}
+          ref={scrollRef}
+          className="chart__scroll"
+          // The box is as big as the chart, up to the room there is; a chart that fits is shown whole, with no scrollbars.
+          style={pxW ? { width: Math.min(width, pxW) + 2, height: Math.min(viewH, pxH + 2) } : undefined}
         >
-          <canvas
-            ref={chartRef}
-            className="chart__canvas"
-            role="img"
-            aria-label={`Stitch chart, ${matrix.cols} stitches by ${matrix.rows} rows`}
-            hidden={view !== "chart"}
-            data-testid="chart-canvas"
-          />
-          <canvas ref={linesRef} className="chart__lines" aria-hidden="true" hidden={view !== "chart"} />
-          <canvas
-            ref={originalRef}
-            className="chart__canvas"
-            role="img"
-            aria-label="Your original picture, cropped"
-            hidden={view !== "original"}
-          />
+          <div
+            ref={stageRef}
+            className={`chart__stage${view === "chart" ? ` chart__stage--${mode}${mode === "draw" && tool !== "paint" ? ` chart__stage--${tool}` : ""}` : ""}`}
+            style={{ width: pxW || undefined, height: pxH || undefined }}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onPointerCancel={onPointerCancel}
+            onPointerEnter={() => {
+              overRef.current = true;
+            }}
+            onPointerLeave={() => {
+              overRef.current = false;
+              setHover(null);
+            }}
+            onContextMenu={(e) => {
+              if (view === "chart") e.preventDefault();
+            }}
+          >
+            <canvas
+              ref={chartRef}
+              className="chart__canvas"
+              role="img"
+              aria-label={`Stitch chart, ${matrix.cols} stitches by ${matrix.rows} rows`}
+              hidden={view !== "chart"}
+              data-testid="chart-canvas"
+            />
+            <canvas ref={linesRef} className="chart__lines" aria-hidden="true" hidden={view !== "chart"} />
+            <canvas
+              ref={originalRef}
+              className="chart__canvas"
+              role="img"
+              aria-label="Your original picture, cropped"
+              hidden={view !== "original"}
+            />
+            {view === "chart" && hover ? (
+              <>
+                <div
+                  className="chart__hl chart__hl--row"
+                  data-testid="hl-row"
+                  aria-hidden="true"
+                  style={{
+                    top: cellEdge(hover.row, cellH),
+                    height: cellEdge(hover.row + 1, cellH) - cellEdge(hover.row, cellH),
+                  }}
+                />
+                <div
+                  className="chart__hl chart__hl--col"
+                  data-testid="hl-col"
+                  aria-hidden="true"
+                  style={{
+                    left: cellEdge(hover.col, cellW),
+                    width: cellEdge(hover.col + 1, cellW) - cellEdge(hover.col, cellW),
+                  }}
+                />
+              </>
+            ) : null}
+          </div>
         </div>
       </div>
     </div>
@@ -878,7 +926,12 @@ export function ChartView({ matrix: converted, image, crop, aspect, onEditedChan
         {blank ? "Reset canvas" : "Reset to converted"}
       </button>
       {confirmReset && (
-        <ConfirmReset changed={changed} blank={blank} onConfirm={resetToConverted} onCancel={() => closeConfirm(false)} />
+        <ConfirmReset
+          changed={changed}
+          blank={blank}
+          onConfirm={resetToConverted}
+          onCancel={() => closeConfirm(false)}
+        />
       )}
     </>
   );

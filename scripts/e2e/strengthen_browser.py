@@ -7,15 +7,20 @@ from playwright.sync_api import sync_playwright
 URL = "http://127.0.0.1:5173/"
 IMGDIR = "/tmp/claude-0/scratch/imgs/"
 results = []
+def unfold(page):
+    """On a phone the setup folds into a bar once a chart is open; open it again before touching setup controls."""
+    b = page.locator("[data-testid=setup-change]")
+    if b.count() and b.is_visible() and b.get_attribute("aria-expanded") == "false":
+        b.click(); time.sleep(0.4)
 def check(name, ok, detail=""):
     results.append((name, bool(ok), detail)); print(("PASS " if ok else "FAIL ") + name + (f"  [{detail}]" if detail else ""), flush=True)
 
 def pick(page, value):
     for _ in range(4):
-        try: page.locator(f'input[type=radio][value="{value}"]').check(force=True); return
+        try: unfold(page); page.locator(f'input[type=radio][value="{value}"]').check(force=True); return
         except Exception: time.sleep(0.4)
 def create(page):
-    page.get_by_role("button", name=re.compile("Create My Crochet Grid")).click()
+    (unfold(page), page.get_by_role("button", name=re.compile("Create My Crochet Grid"))).__getitem__(1).click()
     page.wait_for_selector("[data-testid=chart-canvas]", state="visible", timeout=90000)
     page.wait_for_function("document.querySelector('[data-testid=chart-canvas]').width > 0"); time.sleep(0.6)
 def dark_share(page):
@@ -39,7 +44,7 @@ def scenario(page, tag):
     check(f"{tag}: and not at the smallest size", box(page).count() == 0)
     pick(page, "24x32"); pick(page, "6")
     create(page); plain = dark_share(page)
-    box(page).check(); time.sleep(0.3)
+    unfold(page); box(page).check(); time.sleep(0.3)
     check(f"{tag}: ticking it clears the old chart (a new Create is needed)", page.locator("[data-testid=chart-canvas]").count() == 0)
     create(page); strong = dark_share(page)
     check(f"{tag}: with it on, the chart has noticeably more line (dark) stitches", strong > plain * 1.1, f"{plain:.3f} -> {strong:.3f}")
@@ -50,7 +55,7 @@ def scenario(page, tag):
     page.locator(".chart__color").nth(lum.index(min(lum))).click(); page.get_by_role("button", name="Fill", exact=True).click()
     page.evaluate("document.querySelector('.chart__scroll').scrollIntoView({block:'center'})")
     b = page.locator("[data-testid=chart-canvas]").bounding_box(); page.mouse.click(b["x"] + 6, b["y"] + 6); time.sleep(0.4)
-    box(page).click(); time.sleep(0.4)  # the app asks first, so the box stays ticked until answered
+    unfold(page); box(page).click(); time.sleep(0.4)  # the app asks first, so the box stays ticked until answered
     d = page.locator("dialog.discard[open]")
     check(f"{tag}: changing the option after edits asks before discarding", d.count() == 1 and "thin-line" in d.inner_text(), d.inner_text()[:120] if d.count() else "")
     page.get_by_role("button", name="Keep editing").click(); time.sleep(0.3)

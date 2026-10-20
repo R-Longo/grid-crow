@@ -12,12 +12,17 @@ COLS, ROWS = 96, 144
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 os.makedirs(OUT, exist_ok=True)
 results = []
+def unfold(page):
+    """On a phone the setup folds into a bar once a chart is open; open it again before touching setup controls."""
+    b = page.locator("[data-testid=setup-change]")
+    if b.count() and b.is_visible() and b.get_attribute("aria-expanded") == "false":
+        b.click(); time.sleep(0.4)
 def check(name, ok, detail=""):
     results.append((name, bool(ok), detail)); print(("PASS " if ok else "FAIL ") + name + (f"  [{detail}]" if detail else ""), flush=True)
 
 def pick_radio(page, value):
     for attempt in range(4):
-        try: page.locator(f'input[type=radio][value="{value}"]').check(force=True); return
+        try: unfold(page); page.locator(f'input[type=radio][value="{value}"]').check(force=True); return
         except Exception:
             if page.locator("dialog.discard[open]").count(): return  # the app is asking first; a second click could hit its buttons
             time.sleep(0.5)
@@ -25,7 +30,7 @@ def setup(page):
     page.goto(URL); page.wait_for_load_state("networkidle")
     page.set_input_files("input[type=file]", IMG)
     for v in ("24x32", "10"): pick_radio(page, v)
-    page.get_by_role("button", name=re.compile("Create My Crochet Grid")).click()
+    (unfold(page), page.get_by_role("button", name=re.compile("Create My Crochet Grid"))).__getitem__(1).click()
     page.wait_for_selector("[data-testid=chart-canvas]", state="visible", timeout=60000)
     page.wait_for_function("document.querySelector('[data-testid=chart-canvas]').width > 0"); time.sleep(0.6)
 def grid(page):

@@ -8,18 +8,25 @@ URL = "http://127.0.0.1:5173/"
 OUT = "/tmp/claude-0/scratch/blank_out/"; os.makedirs(OUT, exist_ok=True)
 IMG = "/tmp/claude-0/scratch/imgs/hand_line.png"
 results = []
+def unfold(page):
+    """On a phone the setup folds into a bar once a chart is open; open it again before touching setup controls."""
+    b = page.locator("[data-testid=setup-change]")
+    if b.count() and b.is_visible() and b.get_attribute("aria-expanded") == "false":
+        b.click(); time.sleep(0.4)
 def check(name, ok, detail=""):
     results.append((name, bool(ok), detail)); print(("PASS " if ok else "FAIL ") + name + (f"  [{detail}]" if detail else ""), flush=True)
 
 def radio(page, value):
     for _ in range(4):
-        try: page.locator(f'input[type=radio][value="{value}"]').check(force=True); return
-        except Exception: time.sleep(0.4)
+        try: unfold(page); page.locator(f'input[type=radio][value="{value}"]').check(force=True); return
+        except Exception:
+            if page.locator('dialog.discard[open]').count(): return  # the app asked first; do not click again
+            time.sleep(0.4)
 def opts(page): return page.get_by_role("button", name="Options")
 def dlg(page): return page.locator("dialog.discard[open]")
 def has_chart(page): return page.locator("[data-testid=chart-canvas]").count() > 0
 def open_blank(page):
-    page.locator("[data-testid=open-blank]").click()
+    unfold(page); page.locator("[data-testid=open-blank]").click()
     page.wait_for_selector("[data-testid=chart-canvas]", state="visible", timeout=30000)
     page.wait_for_function("document.querySelector('[data-testid=chart-canvas]').width > 0"); time.sleep(0.5)
 
@@ -90,7 +97,7 @@ def scenario(page, tag, cdp=None):
     errors = []; page.on("pageerror", lambda e: errors.append(str(e)))
     page.goto(URL); page.wait_for_load_state("networkidle")
     cards = page.locator(".start__card")
-    check(f"{tag}: two clearly named starting choices", cards.count() == 2 and "Convert an Image" in cards.nth(0).inner_text() and "Start from Scratch" in cards.nth(1).inner_text())
+    check(f"{tag}: two clearly named starting choices", cards.count() == 2 and "Convert an Image" in cards.nth(0).inner_text() and "Draw from Scratch" in cards.nth(1).inner_text())
     check(f"{tag}: both cards are at least 44px tall", all(cards.nth(i).bounding_box()["height"] >= 44 for i in range(2)))
     check(f"{tag}: the picture workflow is the unchanged default (upload area, colors, Create button)", page.locator("input[type=file]").count() == 1 and page.get_by_role("button", name=re.compile("Create My Crochet Grid")).count() == 1 and page.get_by_text("Maximum yarn colors").count() == 1)
     cards.nth(1).click(); time.sleep(0.3)
@@ -183,7 +190,7 @@ def scenario(page, tag, cdp=None):
 
     # --- switching workflow asks before discarding a design
     swatch(page, 1).click(); tool(page, "Paint"); tap(page, cdp, 5, 5, cols, rows)
-    page.locator("[data-testid=start-image]").click(force=True); time.sleep(0.4)  # the app asks first, so the card stays on Scratch until answered
+    unfold(page); page.locator("[data-testid=start-image]").click(force=True); time.sleep(0.4)  # the app asks first, so the card stays on Scratch until answered
     d = dlg(page)
     check(f"{tag}: switching to Convert an Image with a drawing asks first", d.count() == 1 and has_chart(page), d.inner_text()[:120] if d.count() else "")
     page.get_by_role("button", name="Keep editing").tap() if touch else page.get_by_role("button", name="Keep editing").click(); time.sleep(0.3)
@@ -208,7 +215,7 @@ def scenario(page, tag, cdp=None):
     check(f"{tag}: 24 x 32 portrait is 96 x 144", grid_dims(page) == (96, 144, 10), str(grid_dims(page)))
     # --- the picture workflow still works unchanged
     page.goto(URL); page.wait_for_load_state("networkidle"); page.set_input_files("input[type=file]", IMG); time.sleep(0.8)
-    radio(page, "12x16"); page.get_by_role("button", name=re.compile("Create My Crochet Grid")).click()
+    radio(page, "12x16"); (unfold(page), page.get_by_role("button", name=re.compile("Create My Crochet Grid"))).__getitem__(1).click()
     page.wait_for_selector("[data-testid=chart-canvas]", state="visible", timeout=90000); time.sleep(0.6)
     if touch: opts(page).click(); time.sleep(0.3)  # on a phone the Original / Chart switch is in the Options panel
     check(f"{tag}: Convert an Image still builds a chart, with Original view and no color editor", page.get_by_role("button", name="Original").count() == 1 and page.locator("[data-testid=edit-color-open]").count() == 0 and (grid_dims(page) or (0, 0))[0:2] == (48, 72))

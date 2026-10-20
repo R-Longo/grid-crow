@@ -38,7 +38,7 @@ def run(p):
               return { bar: r('.chart__bar'), box: r('.chart__scroll'), dock: r('.chart__dock'), strip: r('.chart__palette'), dockbar: r('.chart__dockbar'), status: r('.chart__status'),
                 tools: [...document.querySelectorAll('.chart__dockbar button')].map(b => b.getAttribute('aria-label') || b.textContent.trim()), dockPos: getComputedStyle(document.querySelector('.chart__dock')).position,
                 optionsHidden: !vis('.chart__toggle') && !vis('.chart__check') && !vis('.chart__edit') && !vis('.chart__help'), ih: innerHeight }; }""")
-            check(f"{tag}: compact: the chart comes first, right under a one-row header", D["box"]["t"] - D["bar"]["b"] < 20 and D["bar"]["h"] < 70, f"header {D['bar']['h']:.0f}px, gap {D['box']['t']-D['bar']['b']:.0f}")
+            check(f"{tag}: compact: the chart (and its 20px stitch-number ruler) comes first, right under a one-row header", D["box"]["t"] - D["bar"]["b"] < 20 + 20 and D["bar"]["h"] < 70, f"header {D['bar']['h']:.0f}px, gap {D['box']['t']-D['bar']['b']:.0f}")
             check(f"{tag}: compact: the dock has Paint, Fill, Eyedropper, Pan, Undo, Redo", D["tools"] == ["Paint", "Fill", "Eyedropper", "Pan", "Undo", "Redo"], str(D["tools"]))
             check(f"{tag}: compact: yarn colors in a one-row strip above the tools, dock is sticky", D["strip"]["b"] <= D["dockbar"]["t"] + 1 and ((w >= 576 and h <= 544) or (D["strip"]["h"] < 90 and D["dockPos"] == "sticky")))
             if w >= 576 and h <= 544:   # a phone held sideways: the dock is a column beside the chart

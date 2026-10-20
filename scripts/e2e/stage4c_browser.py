@@ -8,13 +8,18 @@ URL = "http://127.0.0.1:5173/"
 IMG = "/tmp/claude-0/scratch/hyb/sun-card-34.png"
 COLS, ROWS = 96, 144
 results = []
+def unfold(page):
+    """On a phone the setup folds into a bar once a chart is open; open it again before touching setup controls."""
+    b = page.locator("[data-testid=setup-change]")
+    if b.count() and b.is_visible() and b.get_attribute("aria-expanded") == "false":
+        b.click(); time.sleep(0.4)
 def check(name, ok, detail=""):
     results.append((name, bool(ok), detail)); print(("PASS " if ok else "FAIL ") + name + (f"  [{detail}]" if detail else ""), flush=True)
 
 def pick_radio(page, value):
     for attempt in range(4):
         try:
-            page.locator(f'input[type=radio][value="{value}"]').check(force=True); return
+            unfold(page); page.locator(f'input[type=radio][value="{value}"]').check(force=True); return
         except Exception:
             # When the app asks "replace your edited chart?" the box stays unchecked until it is answered: that is not a failure,
             # and clicking again could land on one of the dialog's buttons.
@@ -28,7 +33,7 @@ def setup(page, size="24x32", colors="10"):
     create(page)
 
 def create(page):
-    page.get_by_role("button", name=re.compile("Create My Crochet Grid")).click()
+    (unfold(page), page.get_by_role("button", name=re.compile("Create My Crochet Grid"))).__getitem__(1).click()
     page.wait_for_selector("[data-testid=chart-canvas]", state="visible", timeout=60000)
     page.wait_for_function("document.querySelector('[data-testid=chart-canvas]').width > 0")
     time.sleep(0.5)
@@ -127,7 +132,7 @@ def scenario(page, tag, cdp=None):
     check(f"{tag}: Tab never reaches the page behind the dialog", inside)
     blocked = False
     try:
-        page.get_by_role("button", name=re.compile("Create My Crochet Grid")).click(timeout=1500)
+        (unfold(page), page.get_by_role("button", name=re.compile("Create My Crochet Grid"))).__getitem__(1).click(timeout=1500)
     except Exception:
         blocked = True
     check(f"{tag}: the page behind the dialog cannot be clicked", blocked and dlg(page).count() == 1)
@@ -145,7 +150,7 @@ def scenario(page, tag, cdp=None):
     check(f"{tag}: orientation, max colors and crop each ask first", all(v[1] for v in asks.values()), str({k: v[1] for k, v in asks.items()}))
     check(f"{tag}: after three 'Keep editing' answers nothing changed", has_chart(page) and changed(page) == n and checked(page, "24x32") and checked(page, "portrait") and checked(page, "10") and crop_value(page) == 1.0, f"crop {crop_value(page)}")
     # Create again with edits
-    page.get_by_role("button", name=re.compile("Create My Crochet Grid")).click(); time.sleep(0.4)
+    (unfold(page), page.get_by_role("button", name=re.compile("Create My Crochet Grid"))).__getitem__(1).click(); time.sleep(0.4)
     check(f"{tag}: pressing Create again with edits asks first", dlg(page).count() == 1 and "Building a new grid" in dlg(page).inner_text())
     answer(page, "keep", touch)
     check(f"{tag}: Keep editing leaves the edited chart exactly as it was", has_chart(page) and changed(page) == n)
@@ -177,7 +182,7 @@ def scenario(page, tag, cdp=None):
     # --- Create after discard: a clean slate
     setup(page)
     n2 = edit_chart(page, cdp)
-    page.get_by_role("button", name=re.compile("Create My Crochet Grid")).click(); time.sleep(0.4)
+    (unfold(page), page.get_by_role("button", name=re.compile("Create My Crochet Grid"))).__getitem__(1).click(); time.sleep(0.4)
     answer(page, "discard", touch); page.wait_for_selector("[data-testid=chart-canvas]", state="visible", timeout=60000); time.sleep(0.8)
     check(f"{tag}: discarding then Create gives a brand-new chart with no edits", has_chart(page) and changed(page) == 0 and n2 > 3000)
 

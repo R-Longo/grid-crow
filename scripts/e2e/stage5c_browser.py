@@ -7,6 +7,11 @@ import stage5_browser as s5
 
 URL = s5.URL
 results = []
+def unfold(page):
+    """On a phone the setup folds into a bar once a chart is open; open it again before touching setup controls."""
+    b = page.locator("[data-testid=setup-change]")
+    if b.count() and b.is_visible() and b.get_attribute("aria-expanded") == "false":
+        b.click(); time.sleep(0.4)
 def check(name, ok, detail=""):
     results.append((name, bool(ok), detail)); print(("PASS " if ok else "FAIL ") + name + (f"  [{detail}]" if detail else ""), flush=True)
 
