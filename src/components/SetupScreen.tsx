@@ -249,10 +249,25 @@ export function SetupScreen() {
 
         {!scratch && offerStrengthen && (
           <fieldset className="strengthen">
-            <legend>Thin lines</legend>
-            <label className="strengthen__check">
+            <legend className="visually-hidden">Thin lines</legend>
+            <label className="strengthen__row">
+              <span className="strengthen__icon" aria-hidden="true">
+                <svg viewBox="0 0 40 40" width="34" height="34" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M7 30 22 12l5 4L12 34l-6 1z" />
+                  <path d="M19.5 15l5 4" />
+                  <path d="M6 38h14" />
+                  <path className="strengthen__spark" d="M31 6l1.6 3.4L36 11l-3.4 1.6L31 16l-1.6-3.4L26 11l3.4-1.6z" />
+                  <path className="strengthen__spark" d="M32 22l1 2.2 2.2 1-2.2 1L32 28.4l-1-2.2-2.2-1 2.2-1z" />
+                </svg>
+              </span>
+              <span className="strengthen__text">
+                <span className="strengthen__title">Strengthen Lines</span>
+                <span className="strengthen__sub">For drawings with thin outlines</span>
+              </span>
               <input
                 type="checkbox"
+                role="switch"
+                className="strengthen__switch"
                 data-testid="strengthen"
                 checked={strengthen}
                 onChange={(e) => {
@@ -263,11 +278,11 @@ export function SetupScreen() {
                   });
                 }}
               />
-              <span>Strengthen thin lines</span>
             </label>
             <p className="strengthen__help" data-testid="strengthen-help">
-              Makes thin dark pen lines about one stitch wide so they don't fade away. Made for drawings.
-              {lineArt === false && " This picture is colorful or has a dark background, so check the chart and turn this off if it looks worse."}
+              Makes thin, dark lines bolder so they don't fade away in your stitch chart. Best for pen and line drawings.
+              {lineArt === false &&
+                " This picture is colorful or has a dark background, so check the chart and turn this off if it looks worse."}
             </p>
           </fieldset>
         )}

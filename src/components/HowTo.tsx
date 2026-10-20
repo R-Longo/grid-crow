@@ -9,16 +9,37 @@ const G = STANDARD_GAUGE;
 const YARN_TEXT = G.yarnLabel.toLowerCase().replace(" weight", "-weight"); // "worsted-weight #4"
 
 const STEPS: { icon: IconName; title: string; body: string; showSizes?: boolean }[] = [
-  { icon: "image", title: "Upload your image", body: "Accepts JPG, PNG, and WebP files." },
-  { icon: "portrait", title: "Choose orientation", body: "Portrait or landscape." },
+  {
+    icon: "yarn",
+    title: "Choose how to begin",
+    body: "Convert a photo or drawing into a stitch chart, or start with a blank canvas and create your own design.",
+  },
+  {
+    icon: "image",
+    title: "Add your image (if converting)",
+    body: "Upload a JPG, PNG, or WebP image. If you're drawing from scratch, skip this step.",
+  },
   {
     icon: "overlap",
-    title: "Pick your finished size",
+    title: "Choose your tapestry size and orientation",
     showSizes: true,
-    body: "Available in portrait or landscape.",
+    body: "Select a finished size and orientation. GridCrow calculates the stitches and rows using the standard gauge.",
   },
-  { icon: "palette", title: "Choose your yarn colors", body: "Limit your chart to 4, 6, 8, or 10 colors." },
-  { icon: "pencil", title: "Create, edit & download", body: "Generate your grid, fix any stitch you like, and download your chart." },
+  {
+    icon: "pencil",
+    title: "Strengthen lines (optional)",
+    body: "Converting a drawing with thin, dark outlines? Turn on Strengthen Lines to help those details survive conversion. Not needed for blank canvas designs.",
+  },
+  {
+    icon: "palette",
+    title: "Create and edit your chart",
+    body: "Convert your image or open a white stitch grid. Use Paint, Fill, Eyedropper, and Undo to perfect your pattern.",
+  },
+  {
+    icon: "download",
+    title: "Download your pattern",
+    body: "Save your finished stitch chart as a PNG image or a single- or multi-page PDF.",
+  },
 ];
 
 export function HowTo() {

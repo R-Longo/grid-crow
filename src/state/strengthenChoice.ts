@@ -1,5 +1,5 @@
-/** "Strengthen thin lines" is offered once the chart has enough stitches for a one-stitch line to look like a line. */
-export const STRENGTHEN_MIN_COLS = 64; // 16 x 20 in portrait and larger
+/** "Strengthen thin lines" is offered from 12 x 16 up: the two smallest sizes have too few stitches for a one-stitch line to look like a line. */
+export const STRENGTHEN_MIN_COLS = 48; // 12 x 16 in portrait and larger; not on the two smallest sizes
 
 export function strengthenOffered(cols: number): boolean {
   return cols >= STRENGTHEN_MIN_COLS;
