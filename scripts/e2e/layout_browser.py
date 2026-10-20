@@ -25,9 +25,9 @@ def run(p):
               str(sorted({x[0] for x in L["hts"]})))
         if w >= 900:
             frac = L["left"]["w"] / (L["left"]["w"] + L["side"]["w"])
-            check(f"{tag}: two columns, chart about two thirds / sidebar about one third", L["side"]["l"] >= L["left"]["r"] and 0.60 <= frac <= 0.70, f"{frac:.2f}")
+            check(f"{tag}: two columns, chart takes the room, sidebar a steady 21rem (336px)", L["side"]["l"] >= L["left"]["r"] and 0.5 <= frac and 330 <= L["side"]["w"] <= 342, f"{frac:.2f}, sidebar {L['side']['w']:.0f}px")
             check(f"{tag}: chart and sidebar are side by side at the top", abs(L["side"]["t"] - L["left"]["t"]) < 3)
-            check(f"{tag}: sidebar scrolls on its own and stays in view (sticky)", L["sideOverflow"] == "auto" and L["sidePos"] == "sticky")
+            check(f"{tag}: sidebar scrolls on its own inside the workspace", L["sideOverflow"] == "auto")
             check(f"{tag}: the chart's column fits on screen with the sidebar", L["left"]["b"] <= L["ih"] + 2 and L["left"]["t"] >= -2, f"{L['left']['t']:.0f}..{L['left']['b']:.0f} of {L['ih']}")
             # scroll the page: both stay visible while inside the section
             page.mouse.wheel(0, 120); time.sleep(0.2); L2 = lay(page)
@@ -40,8 +40,8 @@ def run(p):
                 optionsHidden: !vis('.chart__toggle') && !vis('.chart__check') && !vis('.chart__edit') && !vis('.chart__help'), ih: innerHeight }; }""")
             check(f"{tag}: compact: the chart (and its 20px stitch-number ruler) comes first, right under a one-row header", D["box"]["t"] - D["bar"]["b"] < 20 + 20 and D["bar"]["h"] < 70, f"header {D['bar']['h']:.0f}px, gap {D['box']['t']-D['bar']['b']:.0f}")
             check(f"{tag}: compact: the dock has Paint, Fill, Eyedropper, Pan, Undo, Redo", D["tools"] == ["Paint", "Fill", "Eyedropper", "Pan", "Undo", "Redo"], str(D["tools"]))
-            check(f"{tag}: compact: yarn colors in a one-row strip above the tools, dock is sticky", D["strip"]["b"] <= D["dockbar"]["t"] + 1 and ((w >= 576 and h <= 544) or (D["strip"]["h"] < 90 and D["dockPos"] == "sticky")))
-            if w >= 576 and h <= 544:   # a phone held sideways: the dock is a column beside the chart
+            check(f"{tag}: compact: phone: yarn colors in a one-row strip above the tools (rail layouts put tools first)", w >= 576 or (D["strip"]["b"] <= D["dockbar"]["t"] + 1 and D["strip"]["h"] < 90))
+            if w >= 576:   # a phone held sideways or a small tablet: a slim rail of tools and colors beside the chart
                 check(f"{tag}: sideways phone: dock is a column to the right of the chart, everything on one screen", D["dock"]["l"] >= D["box"]["r"] - 1 and D["dock"]["r"] <= L["iw"] + 1 and D["box"]["t"] >= -2 and D["box"]["b"] <= D["ih"] + 2 and D["status"]["b"] <= D["ih"] + 2,
                       f"box {D['box']['l']:.0f}-{D['box']['r']:.0f} x {D['box']['t']:.0f}-{D['box']['b']:.0f}, dock {D['dock']['l']:.0f}-{D['dock']['r']:.0f} of {L['iw']}x{D['ih']}")
             else:

@@ -81,15 +81,6 @@ export function fitZoom(cols: number, rows: number, viewW: number, viewH: number
   return Math.max(0.01, Math.floor(f * 1000) / 1000);
 }
 
-/**
- * How tall the chart preview may be for a window of this height: the window less room for the controls around the chart,
- * so the whole chart column (wide layout) or header + chart + bottom dock (compact layout) fits on screen. Never tiny or huge.
- */
-export function previewHeight(windowH: number, compact = false, side = false): number {
-  // `side`: a phone held sideways, where the dock sits beside the chart and only the header and caption are above and below it.
-  return Math.min(1100, Math.max(side ? 200 : 260, windowH - (side ? 150 : compact ? 300 : 280)));
-}
-
 export function clampZoom(z: number, min = MIN_ZOOM, max = MAX_ZOOM): number {
   if (!Number.isFinite(z)) return min;
   return Math.min(max, Math.max(min, z));

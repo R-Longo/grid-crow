@@ -12,8 +12,6 @@ interface OptionGroupProps<T extends string | number> {
   lead?: React.ReactNode;
   /** Number of grid columns; defaults to one per option. */
   columns?: number;
-  /** Extra class on the options grid (layout hooks in the stylesheet). */
-  className?: string;
 }
 
 /** Accessible segmented control built on native radio inputs. */
@@ -24,14 +22,13 @@ export function OptionGroup<T extends string | number>({
   onChange,
   lead,
   columns,
-  className,
 }: OptionGroupProps<T>) {
   const name = useId();
   const style = { "--cols": columns ?? options.length } as CSSProperties;
   return (
     <fieldset>
       <legend>{legend}</legend>
-      <div className={className ? `options ${className}` : "options"} style={style}>
+      <div className="options" style={style}>
         {lead && <span className="options__lead">{lead}</span>}
         {options.map((opt) => {
           const selected = opt.value === value;

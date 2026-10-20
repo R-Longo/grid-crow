@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ROWS_PER_INCH, STITCHES_PER_INCH } from "../../config/gauge";
 import { FINISHED_SIZES } from "../../config/sizes";
 import { buildGridSpec } from "../geometry";
-import { MAX_ZOOM, canvasSize, clampZoom, fitZoom, pointToStitch, previewHeight } from "./coords";
+import { MAX_ZOOM, canvasSize, clampZoom, fitZoom, pointToStitch } from "./coords";
 
 const ASPECT = ROWS_PER_INCH / STITCHES_PER_INCH;
 /** Preview widths x window heights: phones (portrait and sideways), small phone, tablets, laptops, wide desktop. */
@@ -21,7 +21,7 @@ describe("fitZoom: the whole chart is visible", () => {
       const spec = buildGridSpec({ sizeId: size.id, orientation, maxColors: 6 });
       it(`${size.id} ${orientation} (${spec.cols} x ${spec.rows}) fits every screen with all four edges showing, undistorted`, () => {
         for (const [viewW, winH] of SCREENS) {
-          const viewH = previewHeight(winH);
+          const viewH = Math.max(260, winH - 280);
           const fit = fitZoom(spec.cols, spec.rows, viewW, viewH, ASPECT);
           expect(fit).toBeGreaterThan(0);
           expect(fit).toBeLessThanOrEqual(1);
@@ -78,7 +78,7 @@ describe("zoom range", () => {
     for (const orientation of ["portrait", "landscape"] as const) {
       const spec = buildGridSpec({ sizeId: "24x32", orientation, maxColors: 6 });
       for (const [viewW, winH] of SCREENS) {
-        const fit = fitZoom(spec.cols, spec.rows, viewW, previewHeight(winH), ASPECT);
+        const fit = fitZoom(spec.cols, spec.rows, viewW, Math.max(260, winH - 280), ASPECT);
         const cellH = (viewW / (spec.cols * ASPECT)) * fit;
         const layout = { cols: spec.cols, rows: spec.rows, cellW: cellH * ASPECT, cellH };
         const { w, h } = canvasSize(layout);
@@ -88,18 +88,5 @@ describe("zoom range", () => {
         expect(pointToStitch(w, h - 1, layout)).toBeNull();
       }
     }
-  });
-});
-
-describe("previewHeight", () => {
-  it("uses the window less room for the controls, within sensible limits", () => {
-    expect(previewHeight(1000)).toBe(720);
-    expect(previewHeight(300)).toBe(260);
-    expect(previewHeight(4000)).toBe(1100);
-    // the compact (phone) layout also has a header and a dock to make room for
-    expect(previewHeight(844, true)).toBe(544);
-    expect(previewHeight(1000, true)).toBeLessThan(previewHeight(1000));
-    expect(previewHeight(500, true)).toBe(260);
-    expect(previewHeight(390, true, true)).toBe(240); // sideways phone: dock beside the chart
   });
 });

@@ -2070,17 +2070,34 @@ legend {
   }
 }
 
-/* ---------- Responsive page shell and setup (Phase 1) ----------
-   The page is a fluid container, not a fixed phone column. The setup card is as wide as its content needs:
-   one readable column on phones and small tablets, two balanced columns (picture | settings) from 46rem when a
-   picture is being converted, and one centred column for Blank Canvas (which has no picture to show). */
+/* ---------- Page shell ----------
+   The setup stays the original single, vertically flowing column, centred at every screen size and only slightly
+   wider than before on desktop (about 480px of controls). On phones it uses the available width (see the phone
+   padding rules above). The editor sizes itself independently. */
 
 .app {
   max-width: 100rem;
 }
 
 .panel {
-  width: min(100%, 36rem);
+  width: min(100%, 33rem);
+  margin-inline: auto;
+}
+
+/* ---------- Responsive editor (Phase 2) ----------
+   Once a chart is open the editor is a workspace the size of the screen (under the setup bar). The chart is fitted to
+   the room its container actually has (measured), never to a guessed window height. The shape of the surroundings
+   follows the screen:
+   - phone held upright: header buttons, the chart, a status line, and a dock of colors and tools below;
+   - small tablet / phone held sideways: the chart with a slim rail of tools and colors beside it;
+   - laptop and desktop: the chart in a wide area with a sidebar of tools, colors, view and download. */
+
+.panel:has(.chart) {
+  width: min(100%, 100rem);
+}
+
+.setup__body {
+  max-width: 33rem;
   margin-inline: auto;
 }
 
@@ -2088,53 +2105,181 @@ legend {
   max-width: 26rem;
 }
 
-.setup__cols {
-  display: grid;
-  gap: 0;
+.chart {
+  /* svh: the screen with the browser's address bar showing, so the chart does not resize while it slides away. */
+  --ws-h: calc(100vh - 3.5rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  --ws-h: calc(100svh - 3.5rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  width: auto;
+  height: var(--ws-h);
+  min-height: 24rem;
+  margin: 0;
+  transform: none;
 }
 
-.setup__opts {
-  container-type: inline-size;
+@media (max-height: 34rem) {
+  .chart {
+    --ws-h: calc(100vh - 0.5rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    --ws-h: calc(100svh - 0.5rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    min-height: 0;
+  }
+}
+
+/* The box the chart is fitted into: it takes whatever room is left and reports its own size. */
+.chart__wrap {
+  flex: 1 1 0;
+  min-height: 0;
   min-width: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  overflow: hidden;
 }
 
-.setup__pic {
-  min-width: 0;
+.chart__frame {
+  margin: 0;
 }
 
-/* Sizes: three across when the settings column is wide enough, otherwise two. */
-@container (min-width: 34rem) {
-  .options--sizes {
-    grid-template-columns: repeat(3, 1fr);
+/* ----- phone held upright ----- */
+@media (max-width: 35.99rem) {
+  .app {
+    padding: 4px;
+  }
+  .panel:has(.chart) {
+    padding: 4px;
+  }
+  .chart {
+    padding: 0 2px;
+    border: 0;
+    background: none;
+  }
+  .chart--compact .chart__dock {
+    position: static;
+    margin: var(--space-2) 0 0;
+    padding: var(--space-2) 0 calc(var(--space-1) + env(safe-area-inset-bottom, 0px));
+    background: none;
   }
 }
 
-@media (min-width: 46rem) {
-  .panel {
-    padding: var(--space-5) var(--space-6);
+/* ----- small tablet or phone held sideways: slim rail beside the chart ----- */
+@media (max-width: 56.24rem) and (min-width: 36rem) {
+  .app {
+    padding: var(--space-1);
   }
-
-  /* Blank Canvas: no picture column, so a single centred column sized to its controls. */
-  .panel:has(.setup__cols--blank) {
-    width: min(100%, 40rem);
+  .panel:has(.chart) {
+    padding: var(--space-1);
   }
-
-  /* Convert an Image: picture on the left, settings on the right. */
-  .panel:has(.setup__cols:not(.setup__cols--blank)) {
-    width: min(100%, 62rem);
+  .chart--side {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 9.5rem;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    column-gap: var(--space-2);
+    padding: var(--space-1);
+    border: 0;
+    background: none;
   }
-
-  .setup__cols:not(.setup__cols--blank) {
-    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
-    column-gap: var(--space-6);
-    align-items: start;
+  .chart--side .chart__bar {
+    grid-column: 2;
+    grid-row: 1;
+    flex-wrap: nowrap;
+    gap: var(--space-1);
+    margin: 0 0 var(--space-2);
   }
-
-  .setup__cols:not(.setup__cols--blank) .fields {
-    margin-top: 0;
+  .chart--side .chart__wrap {
+    grid-column: 1;
+    grid-row: 1 / span 2;
   }
+  .chart--side .chart__status {
+    grid-column: 1;
+    grid-row: 3;
+    margin: var(--space-1) 0 0;
+  }
+  .chart--side .chart__dock {
+    grid-column: 2;
+    grid-row: 2 / span 2;
+    position: static;
+    margin: 0;
+    padding: 0 2px 0 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .chart--side .chart__dockbar {
+    order: -1;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .chart--side .chart__dockgap {
+    display: none;
+  }
+  .chart--side .chart__palette {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: visible;
+    padding: 0;
+  }
+  .chart--side .chart__palette li {
+    flex: none;
+  }
+  .chart--side .chart__bar > .chart__small {
+    padding: 0;
+    min-height: 44px;
+  }
+  .chart--side .chart__btntext {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  /* The Options and Download panels open leftward over the chart; the rail is too narrow for them. */
+  .chart--side .chart__options {
+    left: auto;
+    right: 0;
+    width: min(24rem, calc(100vw - 1rem));
+  }
+}
 
-  .setup__cols:not(.setup__cols--blank) .cta {
-    margin-top: var(--space-4);
+/* ----- laptop and desktop ----- */
+@media (min-width: 56.25rem) {
+  .chart__layout {
+    flex: 1;
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr) 21rem;
+    grid-template-rows: minmax(0, 1fr);
+    column-gap: var(--space-4);
+    align-items: stretch;
+  }
+  .chart__left {
+    position: static;
+    min-height: 0;
+    height: 100%;
+    gap: var(--space-2);
+  }
+  .chart__main {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+  .chart__side {
+    position: static;
+    max-height: none;
+    height: 100%;
+    min-height: 0;
+    gap: var(--space-3);
+  }
+  .chart__head {
+    display: grid;
+    gap: 2px;
+  }
+  .chart__head .chart__summary {
+    margin: 0;
   }
 }

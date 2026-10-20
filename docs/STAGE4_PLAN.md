@@ -204,6 +204,16 @@ Digital-first: the PNG stays the simplest download; the PDF is the flexible one 
 
 ## 16. Responsive design, Phase 1: page shell and setup
 
-- The page is a fluid container (max 100rem), not a fixed 32rem column. The setup card is as wide as its content needs: one 36rem column on phones and small tablets; from 46rem a Convert-an-Image setup is two balanced columns (picture and crop on the left, orientation / size / Strengthen Lines / colors / Create on the right, card up to 62rem); Blank Canvas has no picture column, so it is one centred 40rem column. Size options go three across when their column is wide enough (container query).
-- Once a chart is open the setup folds into the summary bar on every screen size (not only phones). Change / Hide toggles it; folding never touches the chart and needs no confirmation. Replacing an edited chart still asks first.
+- The setup is the original single, vertically flowing column (starting-mode buttons side by side, then upload, orientation, size, Strengthen Lines, yarn colors, Create), centred at every screen size. Desktop width is only modestly larger than before: a 33rem card (about 480px of controls; it was about 430px). Phones use the available width with the tighter phone padding. The page container is fluid (max 100rem) so the editor can use larger screens independently.
+- Once a chart is open the setup folds into the summary bar on every screen size. Change / Hide toggles it; folding never touches the chart and needs no confirmation. Replacing an edited chart still asks first.
+- A two-column setup was tried and rejected; it is not in the code.
 - Not touched: converter, stitch calculations, editor operations, export. Browser check: `scripts/e2e/responsive_setup_browser.py` (10 viewport sizes).
+
+## 17. Responsive Editor Layout (Phase 2)
+
+Once a chart opens, the editor is a workspace the height of the screen (under the setup bar, `100svh`), up to 100rem wide. The chart is fitted to the room its container actually has (`.chart__wrap` is measured with a ResizeObserver, width and height), replacing the old guessed `previewHeight()` constants. Stitch geometry, numbering, converter and editing/export code are untouched.
+
+- Phone upright (<36rem): header buttons, chart, status line, dock of tools and colors; tight padding.
+- Small tablet / phone sideways (36rem to 56.24rem): chart plus a slim 9.5rem rail of tools and colors (header buttons become icon-only, still 44px).
+- Laptop and desktop (>=56.25rem): chart area plus a steady 21rem sidebar (title, view, tools, colors, download); sidebar scrolls on its own.
+- Test: `scripts/e2e/editor_layout_browser.py` (10 viewports plus live resize/rotation).

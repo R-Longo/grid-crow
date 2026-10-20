@@ -17,7 +17,7 @@ export function Header() {
         <img
           className="brand__logo"
           src={logoSrc}
-          alt="GridCrow — Turn pictures into tapestry crochet grids"
+          alt="GridCrow — Turn any image into a tapestry crochet grid"
           width="1600"
           height="581"
         />

@@ -1,7 +1,7 @@
 {
   "name": "GridCrow",
   "short_name": "GridCrow",
-  "description": "Turn pictures into tapestry crochet grids.",
+  "description": "Turn any image into a tapestry crochet grid.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

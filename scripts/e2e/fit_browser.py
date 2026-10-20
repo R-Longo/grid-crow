@@ -60,10 +60,12 @@ def make_chart(page, size, orientation):
     page.wait_for_selector("[data-testid=chart-canvas]", state="visible", timeout=60000)
     page.wait_for_function("document.querySelector('[data-testid=chart-canvas]').width > 0")
     time.sleep(0.4)
+    page.evaluate("document.querySelector('.chart').scrollIntoView({block:'start'})"); time.sleep(0.2)
 
 def settle(page): time.sleep(0.45)  # resize handler is debounced
 
 def check_whole(page, label, cols, rows):
+    page.evaluate("document.querySelector('.chart').scrollIntoView({block:'start'})"); time.sleep(0.15)
     s = state(page)
     bl, bt, br, bb = s["box"]; cl, ct, cr, cb = s["cv"]
     no_scroll = s["scrollW"] <= s["clientW"] and s["scrollH"] <= s["clientH"]
@@ -71,8 +73,8 @@ def check_whole(page, label, cols, rows):
     w, h = cr - cl, cb - ct
     ratio_ok = abs((w / cols) / (h / rows) - ASPECT) / ASPECT < 0.02
     at_min = abs(s["zval"] - s["zmin"]) < 1e-6
-    # the preview never wider than the window, nor taller than 70% of it (min 260)
-    fits_window = br <= s["iw"] + 0.5 and (bb - bt) <= max(260, s["ih"] - 280) + 3
+    # the drawing area is measured from the room it has: inside the window both ways
+    fits_window = br <= s["iw"] + 0.5 and bb <= s["ih"] + 0.5
     ok = no_scroll and inside and ratio_ok and at_min and fits_window
     check(f"{label}: whole chart visible, no scrolling, undistorted, slider at its minimum", ok,
           f"canvas {w:.0f}x{h:.0f} box {bb-bt:.0f}h; scroll {s['scrollW']}x{s['scrollH']} vs {s['clientW']}x{s['clientH']}; ratio {(w/cols)/(h/rows):.3f}; zmin {s['zmin']:.3f} z {s['zval']:.3f}")

@@ -10,7 +10,6 @@ import {
   clampZoom,
   clientToCanvas,
   fitZoom,
-  previewHeight,
   pointToStitch,
   scrollAfterZoom,
   stitchLabel,
@@ -43,8 +42,8 @@ import { tiledPageCount } from "../engine/export/pdf/tiled";
 /** Phones and narrow tablets get the compact editor: header, chart, then a bottom dock with the tools and yarn colors. */
 export const COMPACT_QUERY = "(max-width: 56.24rem)";
 
-/** A phone held sideways is short and wide: the dock moves to the right of the chart instead of under it. */
-const SIDE_QUERY = "(max-width: 56.24rem) and (max-height: 34rem) and (min-width: 36rem)";
+/** Wider than a phone held upright (small tablets, phones held sideways): a slim rail with the tools and colors sits beside the chart. */
+const SIDE_QUERY = "(max-width: 56.24rem) and (min-width: 36rem)";
 
 export function useMedia(query: string): boolean {
   const [matches, setMatches] = useState(() => typeof window !== "undefined" && window.matchMedia(query).matches);
@@ -118,8 +117,6 @@ export function ChartView({
   const [fitted, setFitted] = useState(true);
   const compact = useMedia(COMPACT_QUERY);
   const side = useMedia(SIDE_QUERY);
-  const [winH, setWinH] = useState(() => (typeof window === "undefined" ? 800 : window.innerHeight));
-  const viewH = previewHeight(winH, compact, side) - RULER_H; // the stitch-number ruler takes its own strip above the box
   const gutter = gutterWidth(compact);
   const [optionsOpen, setOptionsOpen] = useState(false);
   const optionsBtnRef = useRef<HTMLButtonElement>(null);
@@ -139,7 +136,9 @@ export function ChartView({
   const [exportNote, setExportNote] = useState<DownloadNote | null>(null);
   const sectionRef = useRef<HTMLElement>(null);
   const [lines, setLines] = useState(true);
+  // The room the chart has, measured from its container (not guessed from the window).
   const [width, setWidth] = useState(0);
+  const [viewH, setViewH] = useState(0);
   const [mode, setMode] = useState<Mode>("draw");
   const [active, setActive] = useState(startColor);
   const [tool, setTool] = useState<Tool>("paint");
@@ -198,33 +197,13 @@ export function ChartView({
     setDrawVersion((v) => v + 1);
   }, [converted]);
 
-  // The preview's height follows the window. Ordinary changes (rotating the phone, resizing the window) re-fit; the small
-  // height wobble of a phone's address bar sliding away while scrolling does not.
-  useEffect(() => {
-    let lastW = window.innerWidth;
-    let timer = 0;
-    const onResize = () => {
-      window.clearTimeout(timer);
-      timer = window.setTimeout(() => {
-        const w = window.innerWidth;
-        const next = window.innerHeight;
-        setWinH((h) => (w === lastW && Math.abs(next - h) < 90 ? h : next));
-        lastW = w;
-      }, 120);
-    };
-    window.addEventListener("resize", onResize);
-    window.addEventListener("orientationchange", onResize);
-    return () => {
-      window.clearTimeout(timer);
-      window.removeEventListener("resize", onResize);
-      window.removeEventListener("orientationchange", onResize);
-    };
-  }, []);
-
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
-    const measure = () => setWidth(Math.max(0, el.clientWidth - 2 - gutter)); // minus the scroll box's border
+    const measure = () => {
+      setWidth(Math.max(0, el.clientWidth - 2 - gutter)); // minus the scroll box's border
+      setViewH(Math.max(0, el.clientHeight - RULER_H)); // the stitch-number ruler takes its own strip above the box
+    };
     measure();
     if (typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver(measure);
@@ -793,7 +772,7 @@ export function ChartView({
           ref={scrollRef}
           className="chart__scroll"
           // The box is as big as the chart, up to the room there is; a chart that fits is shown whole, with no scrollbars.
-          style={pxW ? { width: Math.min(width, pxW) + 2, height: Math.min(viewH, pxH + 2) } : undefined}
+          style={pxW && viewH > 0 ? { width: Math.min(width, pxW) + 2, height: Math.min(viewH, pxH + 2) } : undefined}
         >
           <div
             ref={stageRef}
@@ -860,7 +839,7 @@ export function ChartView({
   const fitButton = (
     <button type="button" className="chart__small" disabled={view !== "chart" || zoom <= fit} onClick={fitToScreen}>
       <Icon name="fit" size={18} />
-      Fit to Screen
+      <span className="chart__btntext">Fit to Screen</span>
     </button>
   );
   const zoomControls = (
@@ -964,7 +943,7 @@ export function ChartView({
             }}
           >
             <Icon name="options" size={18} />
-            Options
+            <span className="chart__btntext">Options</span>
           </button>
           <button
             ref={downloadBtnRef}
@@ -979,7 +958,7 @@ export function ChartView({
             }}
           >
             <Icon name="download" size={18} />
-            Download
+            <span className="chart__btntext">Download</span>
           </button>
           {downloadOpen && (
             <div
@@ -1040,17 +1019,8 @@ export function ChartView({
   // ---- wide layout: chart on the left, sidebar on the right ----------------------------------------------------
   return (
     <section ref={sectionRef} className="chart" aria-label="Your crochet chart">
-      <div className="chart__head">
-        <h2 className="chart__title">Your chart</h2>
-        <p className="chart__summary">{summary}</p>
-      </div>
-
       <div className="chart__layout">
         <div className="chart__left">
-          <div className="chart__viewbar">
-            {viewToggle}
-            {gridCheck}
-          </div>
           <div className="chart__main">
             {status}
             {chartBox}
@@ -1062,6 +1032,14 @@ export function ChartView({
         </div>
 
         <div className="chart__side">
+          <div className="chart__head">
+            <h2 className="chart__title">Your chart</h2>
+            <p className="chart__summary">{summary}</p>
+          </div>
+          <div className="chart__viewbar">
+            {viewToggle}
+            {gridCheck}
+          </div>
           <div className="chart__tools" role="group" aria-labelledby={toolsId}>
             <h3 id={toolsId} className="chart__heading">
               Editing tools

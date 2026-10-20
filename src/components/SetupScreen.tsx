@@ -164,19 +164,25 @@ export function SetupScreen() {
 
   // A new chart folds the setup away and brings the editor to the top of the screen; no chart, setup open.
   const hasResult = result !== null;
+  // Show the setup bar and the editor under it; on a short screen (phone held sideways) the editor alone, since every pixel counts.
+  const bringEditorIntoView = () => {
+    const short = window.matchMedia("(max-height: 34rem)").matches;
+    const target = short ? document.querySelector(".chart") : barRef.current;
+    target?.scrollIntoView({ block: "start" });
+  };
   useEffect(() => {
     if (!hasResult) {
       setSetupOpen(true);
       return;
     }
     setSetupOpen(false);
-    const t = window.setTimeout(() => barRef.current?.scrollIntoView({ block: "start" }), 50);
+    const t = window.setTimeout(() => bringEditorIntoView(), 50);
     return () => window.clearTimeout(t);
   }, [result, hasResult]);
   const folded = hasResult && !setupOpen;
   const toggleSetup = () => {
     setSetupOpen((o) => !o);
-    window.setTimeout(() => barRef.current?.scrollIntoView({ block: "start" }), 50);
+    window.setTimeout(() => bringEditorIntoView(), 50);
   };
 
   return (
@@ -207,155 +213,148 @@ export function SetupScreen() {
           </div>
         </fieldset>
 
-        <div className={`setup__cols${scratch ? " setup__cols--blank" : ""}`}>
-          {!scratch && (
-            <div className="setup__pic">
-              <UploadZone
-                file={file}
-                onFileChange={chooseFile}
-                externalError={uploadError}
-                preview={
-                  image ? (
-                    <CropPreview
-                      image={image}
-                      aspect={aspect}
-                      crop={crop}
-                      onChange={(c) => {
-                        guard.request("Changing the crop", () => {
-                          invalidate();
-                          setCrop(c);
-                        });
-                      }}
+        {!scratch && (
+          <UploadZone
+            file={file}
+            onFileChange={chooseFile}
+            externalError={uploadError}
+            preview={
+              image ? (
+                <CropPreview
+                  image={image}
+                  aspect={aspect}
+                  crop={crop}
+                  onChange={(c) => {
+                    guard.request("Changing the crop", () => {
+                      invalidate();
+                      setCrop(c);
+                    });
+                  }}
+                />
+              ) : (
+                <p className="preview__meta" role="status">
+                  Opening your picture…
+                </p>
+              )
+            }
+          />
+        )}
+
+        <div className="fields">
+          <OptionGroup
+            legend="Orientation"
+            options={ORIENTATION_OPTIONS}
+            value={settings.orientation}
+            onChange={(v) => update("orientation", v)}
+          />
+
+          <div>
+            <OptionGroup
+              legend="Finished tapestry size"
+              options={sizeOptions(settings.orientation)}
+              value={settings.sizeId}
+              onChange={(v) => update("sizeId", v)}
+              columns={2}
+            />
+            <SizeSummary grid={grid} />
+          </div>
+
+          {!scratch && offerStrengthen && (
+            <fieldset className="strengthen">
+              <legend className="visually-hidden">Thin lines</legend>
+              <label className="strengthen__row">
+                <span className="strengthen__icon" aria-hidden="true">
+                  <svg
+                    viewBox="0 0 40 40"
+                    width="34"
+                    height="34"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M7 30 22 12l5 4L12 34l-6 1z" />
+                    <path d="M19.5 15l5 4" />
+                    <path d="M6 38h14" />
+                    <path
+                      className="strengthen__spark"
+                      d="M31 6l1.6 3.4L36 11l-3.4 1.6L31 16l-1.6-3.4L26 11l3.4-1.6z"
                     />
-                  ) : (
-                    <p className="preview__meta" role="status">
-                      Opening your picture…
-                    </p>
-                  )
-                }
-              />
-            </div>
+                    <path className="strengthen__spark" d="M32 22l1 2.2 2.2 1-2.2 1L32 28.4l-1-2.2-2.2-1 2.2-1z" />
+                  </svg>
+                </span>
+                <span className="strengthen__text">
+                  <span className="strengthen__title">Strengthen Lines</span>
+                  <span className="strengthen__sub">For drawings with thin outlines</span>
+                </span>
+                <input
+                  type="checkbox"
+                  role="switch"
+                  className="strengthen__switch"
+                  data-testid="strengthen"
+                  checked={strengthen}
+                  onChange={(e) => {
+                    const next = e.target.checked;
+                    guard.request("Changing thin-line strengthening", () => {
+                      invalidate();
+                      setStrengthen(next);
+                    });
+                  }}
+                />
+              </label>
+              <p className="strengthen__help" data-testid="strengthen-help">
+                Makes thin, dark lines bolder so they don't fade away in your stitch chart. Best for pen and line
+                drawings.
+                {lineArt === false &&
+                  " This picture is colorful or has a dark background, so check the chart and turn this off if it looks worse."}
+              </p>
+            </fieldset>
           )}
 
-          <div className="setup__opts">
-            <div className="fields">
-              <OptionGroup
-                legend="Orientation"
-                options={ORIENTATION_OPTIONS}
-                value={settings.orientation}
-                onChange={(v) => update("orientation", v)}
-              />
+          {!scratch && (
+            <OptionGroup
+              legend="Maximum yarn colors"
+              options={COLOR_OPTIONS}
+              value={settings.maxColors}
+              onChange={(v) => update("maxColors", v)}
+              lead={<Icon name="palette" size={24} />}
+            />
+          )}
+        </div>
 
-              <div>
-                <OptionGroup
-                  legend="Finished tapestry size"
-                  options={sizeOptions(settings.orientation)}
-                  value={settings.sizeId}
-                  onChange={(v) => update("sizeId", v)}
-                  columns={2}
-                  className="options--sizes"
-                />
-                <SizeSummary grid={grid} />
-              </div>
+        <div className="cta">
+          {scratch ? (
+            <button
+              type="button"
+              className="btn btn--primary"
+              data-testid="open-blank"
+              onClick={() => guard.request("Starting a new canvas", openBlank)}
+            >
+              Open Blank Canvas
+              <Icon name="arrow" size={20} />
+            </button>
+          ) : (
+            <>
+              <button
+                type="button"
+                className="btn btn--primary"
+                disabled={!image || status === "working"}
+                onClick={() => guard.request("Building a new grid", create)}
+              >
+                {status === "working" ? "Building your grid…" : "Create My Crochet Grid"}
+                <Icon name="arrow" size={20} />
+              </button>
+              {!file && <p className="cta-hint">Add a picture to continue.</p>}
+            </>
+          )}
 
-              {!scratch && offerStrengthen && (
-                <fieldset className="strengthen">
-                  <legend className="visually-hidden">Thin lines</legend>
-                  <label className="strengthen__row">
-                    <span className="strengthen__icon" aria-hidden="true">
-                      <svg
-                        viewBox="0 0 40 40"
-                        width="34"
-                        height="34"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M7 30 22 12l5 4L12 34l-6 1z" />
-                        <path d="M19.5 15l5 4" />
-                        <path d="M6 38h14" />
-                        <path
-                          className="strengthen__spark"
-                          d="M31 6l1.6 3.4L36 11l-3.4 1.6L31 16l-1.6-3.4L26 11l3.4-1.6z"
-                        />
-                        <path className="strengthen__spark" d="M32 22l1 2.2 2.2 1-2.2 1L32 28.4l-1-2.2-2.2-1 2.2-1z" />
-                      </svg>
-                    </span>
-                    <span className="strengthen__text">
-                      <span className="strengthen__title">Strengthen Lines</span>
-                      <span className="strengthen__sub">For drawings with thin outlines</span>
-                    </span>
-                    <input
-                      type="checkbox"
-                      role="switch"
-                      className="strengthen__switch"
-                      data-testid="strengthen"
-                      checked={strengthen}
-                      onChange={(e) => {
-                        const next = e.target.checked;
-                        guard.request("Changing thin-line strengthening", () => {
-                          invalidate();
-                          setStrengthen(next);
-                        });
-                      }}
-                    />
-                  </label>
-                  <p className="strengthen__help" data-testid="strengthen-help">
-                    Makes thin, dark lines bolder so they don't fade away in your stitch chart. Best for pen and line
-                    drawings.
-                    {lineArt === false &&
-                      " This picture is colorful or has a dark background, so check the chart and turn this off if it looks worse."}
-                  </p>
-                </fieldset>
-              )}
-
-              {!scratch && (
-                <OptionGroup
-                  legend="Maximum yarn colors"
-                  options={COLOR_OPTIONS}
-                  value={settings.maxColors}
-                  onChange={(v) => update("maxColors", v)}
-                  lead={<Icon name="palette" size={24} />}
-                />
-              )}
-            </div>
-
-            <div className="cta">
-              {scratch ? (
-                <button
-                  type="button"
-                  className="btn btn--primary"
-                  data-testid="open-blank"
-                  onClick={() => guard.request("Starting a new canvas", openBlank)}
-                >
-                  Open Blank Canvas
-                  <Icon name="arrow" size={20} />
-                </button>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    className="btn btn--primary"
-                    disabled={!image || status === "working"}
-                    onClick={() => guard.request("Building a new grid", create)}
-                  >
-                    {status === "working" ? "Building your grid…" : "Create My Crochet Grid"}
-                    <Icon name="arrow" size={20} />
-                  </button>
-                  {!file && <p className="cta-hint">Add a picture to continue.</p>}
-                </>
-              )}
-
-              {status === "error" && runError && (
-                <p className="upload__error" role="alert">
-                  {runError}
-                </p>
-              )}
-              <p className="made-for">Free to use. Made for crocheters. ♡</p>
-            </div>
-          </div>
+          {status === "error" && runError && (
+            <p className="upload__error" role="alert">
+              {runError}
+            </p>
+          )}
+          <p className="made-for">Free to use. Made for crocheters. ♡</p>
         </div>
       </div>
 
