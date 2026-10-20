@@ -82,7 +82,7 @@ export function UploadZone({ file, onFileChange, preview, externalError }: Uploa
           onDrop={onDrop}
         >
           <span className="upload__icon">
-            <Icon name="image" size={40} />
+            <Icon name="image" size={28} />
           </span>
           <p className="upload__prompt">Upload your photo or drawing</p>
           <p className="upload__formats">Drag and drop, or browse. JPG, PNG, or WebP.</p>
