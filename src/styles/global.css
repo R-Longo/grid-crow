@@ -2069,3 +2069,72 @@ legend {
     padding: var(--space-2) var(--space-2) 0;
   }
 }
+
+/* ---------- Responsive page shell and setup (Phase 1) ----------
+   The page is a fluid container, not a fixed phone column. The setup card is as wide as its content needs:
+   one readable column on phones and small tablets, two balanced columns (picture | settings) from 46rem when a
+   picture is being converted, and one centred column for Blank Canvas (which has no picture to show). */
+
+.app {
+  max-width: 100rem;
+}
+
+.panel {
+  width: min(100%, 36rem);
+  margin-inline: auto;
+}
+
+.brand__logo {
+  max-width: 26rem;
+}
+
+.setup__cols {
+  display: grid;
+  gap: 0;
+}
+
+.setup__opts {
+  container-type: inline-size;
+  min-width: 0;
+}
+
+.setup__pic {
+  min-width: 0;
+}
+
+/* Sizes: three across when the settings column is wide enough, otherwise two. */
+@container (min-width: 34rem) {
+  .options--sizes {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 46rem) {
+  .panel {
+    padding: var(--space-5) var(--space-6);
+  }
+
+  /* Blank Canvas: no picture column, so a single centred column sized to its controls. */
+  .panel:has(.setup__cols--blank) {
+    width: min(100%, 40rem);
+  }
+
+  /* Convert an Image: picture on the left, settings on the right. */
+  .panel:has(.setup__cols:not(.setup__cols--blank)) {
+    width: min(100%, 62rem);
+  }
+
+  .setup__cols:not(.setup__cols--blank) {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    column-gap: var(--space-6);
+    align-items: start;
+  }
+
+  .setup__cols:not(.setup__cols--blank) .fields {
+    margin-top: 0;
+  }
+
+  .setup__cols:not(.setup__cols--blank) .cta {
+    margin-top: var(--space-4);
+  }
+}

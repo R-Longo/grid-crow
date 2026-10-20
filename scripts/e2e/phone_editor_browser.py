@@ -52,7 +52,7 @@ def desktop(p):
     page.goto(b.URL); page.wait_for_selector(".start__card")
     page.locator("[data-testid=start-scratch]").click(force=True); page.locator("[data-testid=open-blank]").click()
     page.wait_for_selector("[data-testid=chart-canvas]", state="visible"); time.sleep(0.8)
-    check("desktop: no setup bar, setup stays open", page.locator("[data-testid=setup-bar]").count() == 0 and page.locator("[data-testid=open-blank]").is_visible())
+    check("desktop: setup folds into the summary bar too (the chart is the workspace)", page.locator("[data-testid=setup-bar]").is_visible() and not page.locator("[data-testid=open-blank]").is_visible())
     br.close()
 
 if __name__ == "__main__":

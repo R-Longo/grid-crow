@@ -8,6 +8,11 @@ ASPECT = 4.5 / 4
 SIZES = ["6x8", "8x10", "12x16", "16x20", "18x24", "24x32"]
 VIEWPORTS = [(320, 568), (390, 844), (844, 390), (768, 1024), (1024, 768), (1280, 800), (1920, 1080)]
 results = []
+def unfold(page):
+    """Once a chart is open the setup folds into a bar on every screen size; open it before touching setup controls."""
+    b = page.locator("[data-testid=setup-change]")
+    if b.count() and b.is_visible() and b.get_attribute("aria-expanded") == "false":
+        b.click(); time.sleep(0.4)
 def check(name, ok, detail=""):
     results.append((name, bool(ok), detail)); print(("PASS " if ok else "FAIL ") + name + (f"  [{detail}]" if detail else ""), flush=True)
 
@@ -142,7 +147,7 @@ def main(p):
     # new chart opens fitted even after zooming in the previous one
     set_zoom(page, 5)
     time.sleep(0.3)
-    page.get_by_role("button", name=re.compile("Create My Crochet Grid")).click(); time.sleep(0.4)
+    unfold(page); page.get_by_role("button", name=re.compile("Create My Crochet Grid")).click(); time.sleep(0.4)
     if page.locator("dialog.discard[open]").count():  # Stage 4C: a chart with hand edits asks before it is replaced
         page.get_by_role("button", name="Discard edits and continue").click()
     page.wait_for_function("document.querySelector('.chart__zoom input') && true"); time.sleep(2.5)

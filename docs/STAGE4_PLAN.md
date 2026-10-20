@@ -201,3 +201,9 @@ Digital-first: the PNG stays the simplest download; the PDF is the flexible one 
 - Phone: once a chart (blank or converted) is open the setup folds into a one-line bar ("Blank canvas · 12 × 16 in · Change") and the editor scrolls into view; Change/Hide toggles it. Page, panel and chart padding are tighter on phones so the chart is wider. Fit uses the room left after the rulers; it refits on rotation.
 - Unchanged: converter, color reduction, stitch data, undo/redo, painting, fill, palette editing, PNG/PDF export.
 - Browser checks: `scripts/e2e/rulers_browser.py`, `scripts/e2e/phone_editor_browser.py`.
+
+## 16. Responsive design, Phase 1: page shell and setup
+
+- The page is a fluid container (max 100rem), not a fixed 32rem column. The setup card is as wide as its content needs: one 36rem column on phones and small tablets; from 46rem a Convert-an-Image setup is two balanced columns (picture and crop on the left, orientation / size / Strengthen Lines / colors / Create on the right, card up to 62rem); Blank Canvas has no picture column, so it is one centred 40rem column. Size options go three across when their column is wide enough (container query).
+- Once a chart is open the setup folds into the summary bar on every screen size (not only phones). Change / Hide toggles it; folding never touches the chart and needs no confirmation. Replacing an edited chart still asks first.
+- Not touched: converter, stitch calculations, editor operations, export. Browser check: `scripts/e2e/responsive_setup_browser.py` (10 viewport sizes).
