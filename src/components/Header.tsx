@@ -17,11 +17,12 @@ export function Header() {
         <img
           className="brand__logo"
           src={logoSrc}
-          alt="GridCrow — Turn any image into a tapestry crochet grid"
+          alt="GridCrow"
           width="1600"
           height="581"
         />
       </h1>
+      <p className="brand__tagline">Turn any image into a tapestry crochet grid</p>
       <div className="header__bar">
         <span className="header__rule header__rule--left" aria-hidden="true">
           <Sparkle />

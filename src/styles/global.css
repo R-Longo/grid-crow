@@ -2283,3 +2283,34 @@ legend {
     margin: 0;
   }
 }
+
+/* ---------- Tagline: real text in a clean sans-serif, warm cream (replaces the pixel lettering that was in the logo) ---------- */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../assets/fonts/inter-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("../assets/fonts/inter-latin-500-normal.woff2") format("woff2");
+}
+.brand__tagline {
+  margin: calc(-1 * var(--space-1)) 0 var(--space-3);
+  text-align: center;
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: 0.01em;
+  color: #f0dfc2;
+}
+@media (max-width: 24rem) {
+  .brand__tagline {
+    font-size: 0.9375rem;
+  }
+}
