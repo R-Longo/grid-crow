@@ -16,7 +16,7 @@ export function normalizeHex(input: string): string | null {
   return null;
 }
 
-function colorOf(hex: string): PaletteColor {
+export function colorOf(hex: string): PaletteColor {
   const n = parseInt(hex.slice(1), 16);
   return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255, hex };
 }
@@ -46,4 +46,21 @@ export function stitchesOfSlot(m: StitchMatrix, slot: number): Array<{ col: numb
     for (let col = 0; col < m.cols; col++) if (cells[col] === slot) out.push({ col, row });
   }
   return out;
+}
+
+/** Most yarn colors a chart may hold (the starting colors plus any added while editing). */
+export const MAX_PALETTE = 16;
+
+export type AddColorResult =
+  | { ok: true; matrix: StitchMatrix; hex: string; slot: number }
+  | { ok: false; reason: "invalid" | "duplicate" | "full"; /** The slot that already has this color. */ slot?: number };
+
+/** Add a new yarn color to the end of the palette. No stitch changes; the new slot is unused until painted. */
+export function addColorSlot(m: StitchMatrix, input: string): AddColorResult {
+  const hex = normalizeHex(input);
+  if (!hex) return { ok: false, reason: "invalid" };
+  if (m.palette.length >= MAX_PALETTE) return { ok: false, reason: "full" };
+  const other = m.palette.findIndex((p) => p.hex.toLowerCase() === hex);
+  if (other >= 0) return { ok: false, reason: "duplicate", slot: other };
+  return { ok: true, matrix: { cols: m.cols, rows: m.rows, palette: [...m.palette, colorOf(hex)], cells: m.cells }, hex, slot: m.palette.length };
 }

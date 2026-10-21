@@ -3,10 +3,10 @@ import type { Stitch } from "./coords";
 import { floodFill } from "./fill";
 import { gestureStep, initialGesture } from "./gesture";
 import type { GestureEffect, GestureState, Mode, PointerKind } from "./gesture";
-import { History, applyEdit, makeEdit, makeRecolorEdit } from "./history";
+import { History, applyEdit, makeAddColorEdit, makeEdit, makeRecolorEdit } from "./history";
 import { countDifferences, isPaletteIndex, paintStitches, stitchesOnSegment } from "./paint";
-import { recolorSlot, stitchesOfSlot } from "./recolor";
-import type { RecolorResult } from "./recolor";
+import { addColorSlot, recolorSlot, stitchesOfSlot } from "./recolor";
+import type { AddColorResult, RecolorResult } from "./recolor";
 
 /** What a one-finger / left-button gesture does in Draw mode. */
 export type Tool = "paint" | "fill" | "pick";
@@ -23,9 +23,11 @@ export type SessionEffect =
   | { type: "repaint"; stitches: Stitch[] }
   /** An action finished (or was undone/redone). `changed` = stitches that now differ from the converted chart;
    *  `stitches` = how many stitches this action itself touched. */
-  | { type: "committed"; action: "paint" | "fill" | "recolor" | "undo" | "redo"; changed: number; stitches: number }
+  | { type: "committed"; action: "paint" | "fill" | "recolor" | "addcolor" | "undo" | "redo"; changed: number; stitches: number }
   /** The eyedropper chose a color; painting continues with it. */
   | { type: "picked"; color: number }
+  /** The painting color changed because the chart's palette did (an added color was undone). */
+  | { type: "colorChosen"; color: number }
   | { type: "hover"; stitch: Stitch }
   | { type: "pan"; dx: number; dy: number }
   | { type: "pinch"; scale: number; cx: number; cy: number; dx: number; dy: number };
@@ -93,12 +95,30 @@ export class EditorSession {
     };
   }
 
+  /** Add a new yarn color to the palette and paint with it from now on (one undo step). */
+  addColor(hex: string): { result: AddColorResult; effects: SessionEffect[] } {
+    if (this.busy) return { result: { ok: false, reason: "invalid" }, effects: [] };
+    const result = addColorSlot(this.matrix, hex);
+    if (!result.ok) return { result, effects: [] };
+    this.matrix = result.matrix;
+    this.history.push(makeAddColorEdit(result.slot, result.hex));
+    this.active = result.slot;
+    return {
+      result,
+      effects: [
+        { type: "committed", action: "addcolor", changed: this.changedCount(), stitches: 0 },
+        { type: "picked", color: result.slot },
+      ],
+    };
+  }
+
   /** Throw away every edit. The converted chart itself is never touched. */
   reset(): void {
     this.gesture = initialGesture;
     this.stroke = null;
     this.matrix = this.converted;
     this.history.clear();
+    if (this.active >= this.matrix.palette.length) this.active = this.matrix.palette.length - 1;
   }
 
   get canUndo(): boolean {
@@ -125,10 +145,16 @@ export class EditorSession {
     if (!e) return [];
     const r = applyEdit(this.matrix, e, direction);
     this.matrix = r.matrix;
-    return [
+    const effects: SessionEffect[] = [
       { type: "repaint", stitches: r.stitches },
       { type: "committed", action: direction, changed: this.changedCount(), stitches: r.stitches.length },
     ];
+    // An added color that was just undone away can no longer be the color painting uses.
+    if (this.active >= this.matrix.palette.length) {
+      this.active = this.matrix.palette.length - 1;
+      effects.push({ type: "colorChosen", color: this.active });
+    }
+    return effects;
   }
 
   /** Drop any gesture in progress, undoing a half-finished stroke (e.g. the view changed under the pointer). */

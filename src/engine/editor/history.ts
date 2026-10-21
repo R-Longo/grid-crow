@@ -1,6 +1,6 @@
 import type { StitchMatrix } from "../convert/types";
 import type { Stitch } from "./coords";
-import { stitchesOfSlot, withSlotColor } from "./recolor";
+import { colorOf, stitchesOfSlot, withSlotColor } from "./recolor";
 
 /**
  * Undo history. Each entry is ONE user action (one brush stroke, or one fill) stored as the stitches it changed:
@@ -8,7 +8,7 @@ import { stitchesOfSlot, withSlotColor } from "./recolor";
  * stitch, never a copy of the chart.
  */
 export interface Edit {
-  label: "paint" | "fill" | "recolor";
+  label: "paint" | "fill" | "recolor" | "addcolor";
   /** row * cols + col of each changed stitch. */
   index: Uint32Array;
   before: Uint8Array;
@@ -22,6 +22,11 @@ export interface Edit {
 /** A change of one palette slot's color. It costs nothing per stitch. */
 export function makeRecolorEdit(slot: number, fromHex: string, toHex: string): Edit {
   return { label: "recolor", index: new Uint32Array(0), before: new Uint8Array(0), after: new Uint8Array(0), slot, fromHex, toHex };
+}
+
+/** A new yarn color added at the end of the palette (slot = its index). Undo removes it again. */
+export function makeAddColorEdit(slot: number, hex: string): Edit {
+  return { label: "addcolor", index: new Uint32Array(0), before: new Uint8Array(0), after: new Uint8Array(0), slot, toHex: hex };
 }
 
 /** Build an edit from the stitches that changed between two charts of the same size. */
@@ -53,6 +58,10 @@ export function applyEdit(m: StitchMatrix, e: Edit, direction: "undo" | "redo"):
     const slot = e.slot as number;
     return { matrix: withSlotColor(m, slot, (direction === "undo" ? e.fromHex : e.toHex) as string), stitches: stitchesOfSlot(m, slot) };
   }
+  if (e.label === "addcolor") {
+    const palette = direction === "undo" ? m.palette.slice(0, e.slot as number) : [...m.palette, colorOf(e.toHex as string)];
+    return { matrix: { cols: m.cols, rows: m.rows, palette, cells: m.cells }, stitches: [] };
+  }
   const cols = m.cols;
   const values = direction === "undo" ? e.before : e.after;
   const cells = m.cells.slice();
@@ -75,6 +84,11 @@ export function applyEdit(m: StitchMatrix, e: Edit, direction: "undo" | "redo"):
 /** Does the chart currently hold what the edit expects to find (all "after" values for undo, "before" for redo)? */
 export function editMatches(m: StitchMatrix, e: Edit, direction: "undo" | "redo"): boolean {
   if (e.label === "recolor") return m.palette[e.slot as number]?.hex.toLowerCase() === (direction === "undo" ? e.toHex : e.fromHex);
+  if (e.label === "addcolor") {
+    return direction === "undo"
+      ? m.palette.length === (e.slot as number) + 1 && m.palette[e.slot as number].hex.toLowerCase() === e.toHex
+      : m.palette.length === (e.slot as number);
+  }
   const expect = direction === "undo" ? e.after : e.before;
   for (let k = 0; k < e.index.length; k++) {
     const row = (e.index[k] / m.cols) | 0;
@@ -109,7 +123,7 @@ export class History {
 
   /** Record a new action. A new action ends any redo chain. Empty edits are ignored. */
   push(e: Edit): void {
-    if (e.index.length === 0 && e.label !== "recolor") return;
+    if (e.index.length === 0 && e.label !== "recolor" && e.label !== "addcolor") return;
     this.undone = [];
     this.done.push(e);
     this.stitches += e.index.length;

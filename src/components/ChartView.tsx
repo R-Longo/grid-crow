@@ -29,7 +29,7 @@ import type { IconName } from "./Icon";
 import { ColorEditor } from "./ColorEditor";
 import { ConfirmReset } from "./ConfirmReset";
 import { BLANK_BACKGROUND_SLOT } from "../engine/blank";
-import type { RecolorResult } from "../engine/editor/recolor";
+import type { AddColorResult, RecolorResult } from "../engine/editor/recolor";
 import { DownloadPanel } from "./DownloadPanel";
 import type { DownloadChoices, DownloadNote } from "./DownloadPanel";
 import { buildPatternModel, patternFileName } from "../engine/export/pattern";
@@ -395,6 +395,9 @@ export function ChartView({
                   : "",
             );
             break;
+          case "colorChosen":
+            setActive(e.color);
+            break;
           case "picked":
             setActive(e.color);
             setTool("paint");
@@ -604,6 +607,7 @@ export function ChartView({
     setMatrix(converted);
     setChanged(0);
     setDrawVersion((v) => v + 1);
+    setActive(sessionRef.current!.active);
     setNote(blank ? "Reset to the blank canvas." : "Reset to the converted chart.");
     closeConfirm(true);
   };
@@ -614,6 +618,16 @@ export function ChartView({
     if (result.ok) {
       applyEffects(effects);
       setNote(`Recolored to ${result.to.toUpperCase()}.`);
+    }
+    return result;
+  };
+
+  // Add a new yarn color to the palette and paint with it (one undo step); nothing already painted changes.
+  const addNewColor = (hex: string): AddColorResult => {
+    const { result, effects } = sessionRef.current!.addColor(hex);
+    if (result.ok) {
+      applyEffects(effects);
+      setNote(`Added ${result.hex.toUpperCase()}. Paint with it now.`);
     }
     return result;
   };
@@ -700,6 +714,7 @@ export function ChartView({
       count={counts[active] ?? 0}
       isBackground={blank && active === BLANK_BACKGROUND_SLOT}
       onApply={recolorActive}
+      onAdd={addNewColor}
       describeSlot={(i) =>
         `${matrix.palette[i].hex.toUpperCase()}${blank && i === BLANK_BACKGROUND_SLOT ? ", your background" : ""}`
       }

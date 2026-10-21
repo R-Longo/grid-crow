@@ -2345,3 +2345,13 @@ legend {
     scrollbar-color: rgba(240, 223, 194, 0.35) transparent;
   }
 }
+
+.coloredit__hint {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+.coloredit__hint strong {
+  color: var(--text);
+  font-weight: 600;
+}

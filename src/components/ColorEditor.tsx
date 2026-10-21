@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from "react";
 import type { PaletteColor } from "../engine/convert/types";
-import type { RecolorResult } from "../engine/editor/recolor";
+import type { AddColorResult, RecolorResult } from "../engine/editor/recolor";
 import { normalizeHex } from "../engine/editor/recolor";
 
 interface ColorEditorProps {
@@ -13,6 +13,8 @@ interface ColorEditorProps {
   isBackground: boolean;
   /** Tries the change; says whether it worked. */
   onApply: (hex: string) => RecolorResult;
+  /** Adds the color to the palette as a new yarn color and paints with it; says whether it worked. */
+  onAdd: (hex: string) => AddColorResult;
   /** The color name of another slot, for the "already in your palette" message. */
   describeSlot: (slot: number) => string;
 }
@@ -21,7 +23,7 @@ interface ColorEditorProps {
  * Changes the yarn color of one palette slot of a blank canvas. A change recolors EVERY stitch that uses the slot, so the
  * panel says so, with the number, and only acts on an explicit button press (never while the color picker is being dragged).
  */
-export function ColorEditor({ slot, color, count, isBackground, onApply, describeSlot }: ColorEditorProps) {
+export function ColorEditor({ slot, color, count, isBackground, onApply, onAdd, describeSlot }: ColorEditorProps) {
   const uid = useId();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState(color.hex);
@@ -56,6 +58,25 @@ export function ColorEditor({ slot, color, count, isBackground, onApply, describ
     }
   };
 
+  const add = () => {
+    setDone(null);
+    if (!normalized) {
+      setError("That isn't a color yet. Use six letters or numbers, like #1f5fbf.");
+      return;
+    }
+    const r = onAdd(normalized);
+    if (r.ok) {
+      setError(null);
+      setDone(`Added ${r.hex.toUpperCase()}. It is selected, so you can paint with it now.`);
+    } else if (r.reason === "duplicate") {
+      setError(`That color is already in your palette (${describeSlot(r.slot as number)}). Pick it from the yarn colors to paint with it.`);
+    } else if (r.reason === "full") {
+      setError("Your palette is full (16 colors). Recolor one you are not using instead.");
+    } else {
+      setError("That color can't be used.");
+    }
+  };
+
   return (
     <div className="coloredit" data-testid="color-editor">
       <button
@@ -74,6 +95,9 @@ export function ColorEditor({ slot, color, count, isBackground, onApply, describ
       </button>
       {open && (
         <div id={`${uid}-panel`} className="coloredit__panel" role="group" aria-label={`Edit ${color.hex.toUpperCase()}`}>
+          <p className="coloredit__hint">
+            Just want a new color for a few stitches, like a pink nose? Pick it and choose <strong>Add as a new color</strong>, then paint with it.
+          </p>
           <p className="coloredit__warn" data-testid="color-warning">
             {count === 0
               ? "No stitches use this color yet, so this only changes the swatch."
@@ -111,7 +135,10 @@ export function ColorEditor({ slot, color, count, isBackground, onApply, describ
               }}
             />
           </div>
-          <button type="button" className="chart__small chart__small--primary" data-testid="color-apply" onClick={apply}>
+          <button type="button" className="chart__small chart__small--primary" data-testid="color-add" onClick={add}>
+            Add as a new color
+          </button>
+          <button type="button" className="chart__small" data-testid="color-apply" onClick={apply}>
             {count === 0 ? "Change color" : `Recolor ${count} ${count === 1 ? "stitch" : "stitches"}`}
           </button>
           <p className={error ? "coloredit__msg coloredit__msg--error" : "coloredit__msg"} role={error ? "alert" : "status"} data-testid="color-message">
