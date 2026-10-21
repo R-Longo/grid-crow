@@ -23,6 +23,8 @@ interface DownloadPanelProps {
   onChoices: (next: DownloadChoices) => void;
   /** Pages Large Print would make for this chart (the overview plus the chart pages). */
   tiledPages: number;
+  /** Pages Compact makes for this chart (overview + chart pages). */
+  compactPages: number;
 }
 
 /**
@@ -30,9 +32,10 @@ interface DownloadPanelProps {
  * The PDF is the flexible one, to read on screen or print. Only when "Large print" is chosen does the printing help appear.
  * Shown in the sidebar on wide screens and in the "Download" panel on phones.
  */
-export function DownloadPanel({ onPng, onPdf, busy, note, choices, onChoices, tiledPages }: DownloadPanelProps) {
+export function DownloadPanel({ onPng, onPdf, busy, note, choices, onChoices, tiledPages, compactPages }: DownloadPanelProps) {
   const uid = useId();
   const tiled = choices.pdfLayout === "tiled";
+  const compact = choices.pdfLayout === "compact";
   return (
     <div className="download" data-testid="download-panel">
       <p className="download__text">Save your finished chart as a sharp picture you can zoom in on, with a color key and stitch counts.</p>
@@ -48,13 +51,24 @@ export function DownloadPanel({ onPng, onPdf, busy, note, choices, onChoices, ti
       <fieldset className="download__pdf">
         <legend className="download__legend">PDF, to read or print</legend>
         <label className="download__check">
-          <input type="radio" name={`${uid}-layout`} data-testid="pdf-fit" checked={!tiled} onChange={() => onChoices({ ...choices, pdfLayout: "fit" })} />
+          <input type="radio" name={`${uid}-layout`} data-testid="pdf-fit" checked={!tiled && !compact} onChange={() => onChoices({ ...choices, pdfLayout: "fit" })} />
           <span>Fit to one page</span>
         </label>
         <label className="download__check">
           <input type="radio" name={`${uid}-layout`} data-testid="pdf-tiled" checked={tiled} onChange={() => onChoices({ ...choices, pdfLayout: "tiled" })} />
           <span>Large print, tiled pages</span>
         </label>
+        <label className="download__check">
+          <input type="radio" name={`${uid}-layout`} data-testid="pdf-compact" checked={compact} onChange={() => onChoices({ ...choices, pdfLayout: "compact" })} />
+          <span>Compact, fewer pages</span>
+        </label>
+        {compact && (
+          <p className="download__text download__tiled" data-testid="pdf-compact-help">
+            {compactPages === 2
+              ? "Your chart fits on one page, plus an overview page. Stitches are printed smaller than the finished piece. Print at 100% (Actual size)."
+              : `${compactPages} pages: an overview, then ${compactPages - 1} chart pages that join along bold lines. Stitches are printed smaller than the finished piece (about three quarters of Large print). Print at 100% (Actual size).`}
+          </p>
+        )}
         {tiled && (
           <p className="download__text download__tiled" data-testid="pdf-tiled-help">
             {tiledPages === 2

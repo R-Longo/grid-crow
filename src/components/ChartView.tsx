@@ -37,7 +37,7 @@ import { downloadBlob, renderPatternPng } from "../lib/exportPng";
 import { renderPatternPdf } from "../lib/exportPdf";
 import { afterExport, hasDownload, unsavedCount } from "../state/exportCheckpoint";
 import type { ExportCheckpoint } from "../state/exportCheckpoint";
-import { tiledPageCount } from "../engine/export/pdf/tiled";
+import { COMPACT_PROFILE, tiledPageCount } from "../engine/export/pdf/tiled";
 
 /** Phones and narrow tablets get the compact editor: header, chart, then a bottom dock with the tools and yarn colors. */
 export const COMPACT_QUERY = "(max-width: 56.24rem)";
@@ -571,8 +571,8 @@ export function ChartView({
       const exportSession = sessionRef.current!;
       const snapshot = exportSession.matrix;
       const model = buildPatternModel(snapshot);
-      const tiled = downloadChoices.pdfLayout === "tiled";
-      const name = patternFileName(model, "pdf", tiled ? "large-print" : "");
+      const layoutKind = downloadChoices.pdfLayout;
+      const name = patternFileName(model, "pdf", layoutKind === "tiled" ? "large-print" : layoutKind === "compact" ? "compact" : "");
       const blob = await renderPatternPdf(model, {
         layout: downloadChoices.pdfLayout,
         letters: downloadChoices.pdfLetters,
@@ -991,6 +991,7 @@ export function ChartView({
                 choices={downloadChoices}
                 onChoices={setDownloadChoices}
                 tiledPages={tiledPageCount(matrix.cols, matrix.rows)}
+                compactPages={tiledPageCount(matrix.cols, matrix.rows, COMPACT_PROFILE)}
               />
             </div>
           )}
@@ -1083,6 +1084,7 @@ export function ChartView({
               choices={downloadChoices}
               onChoices={setDownloadChoices}
               tiledPages={tiledPageCount(matrix.cols, matrix.rows)}
+              compactPages={tiledPageCount(matrix.cols, matrix.rows, COMPACT_PROFILE)}
             />
           </div>
           <div className="chart__edit">{utility}</div>

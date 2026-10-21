@@ -13,12 +13,38 @@ export const TILE_CELL_H = 16;
 export const TILE_CELL_W = TILE_CELL_H * STITCH_ASPECT; // 18
 export const TILE_MAX_COLS = 27;
 export const TILE_MAX_ROWS = 38;
+
+/** How big each stitch is printed and how many fit on a page. Large print is the real crochet gauge; Compact is smaller, for fewer pages. */
+export interface TileProfile {
+  name: "large" | "compact";
+  cellH: number;
+  cellW: number;
+  maxCols: number;
+  maxRows: number;
+  letterSize: number;
+  numberSize: number;
+  /** Words in the overview page title. */
+  title: string;
+}
+export const LARGE_PROFILE: TileProfile = { name: "large", cellH: TILE_CELL_H, cellW: TILE_CELL_W, maxCols: TILE_MAX_COLS, maxRows: TILE_MAX_ROWS, letterSize: 10.5, numberSize: 7, title: "large print" };
+/** 12pt tall stitches (3/4 of Large print): the biggest chart prints on 9 chart pages instead of 16. */
+const COMPACT_CELL_H = 12;
+export const COMPACT_PROFILE: TileProfile = {
+  name: "compact",
+  cellH: COMPACT_CELL_H,
+  cellW: COMPACT_CELL_H * STITCH_ASPECT,
+  maxCols: 36,
+  maxRows: 50,
+  letterSize: 8,
+  numberSize: 6.5,
+  title: "compact",
+};
 const CHART_TOP = 100;
 const M = 36;
 const GUTTER = 8;
 
-export function tilePlanFor(model: PatternModel): TilePlan {
-  return planTiles(model.cols, model.rows, TILE_MAX_COLS, TILE_MAX_ROWS, 2);
+export function tilePlanFor(model: PatternModel, profile: TileProfile = LARGE_PROFILE): TilePlan {
+  return planTiles(model.cols, model.rows, profile.maxCols, profile.maxRows, 2);
 }
 
 /** The row numbers a tile covers, from the chart's own numbering (row 1 is the bottom). */
@@ -37,9 +63,10 @@ interface Box {
  * The assembly overview: one box per page, laid out exactly as the pages go together, in the chart's real proportions.
  * Used large on the overview page (with page numbers and stitch ranges) and small on every page (with "you are here").
  */
-export function drawAssembly(ops: Op[], plan: TilePlan, box: Box, opts: { numbers: boolean; ranges: boolean; model?: PatternModel; highlight?: number; tag?: string }): Box {
-  const totalW = plan.cols * TILE_CELL_W;
-  const totalH = plan.rows * TILE_CELL_H;
+export function drawAssembly(ops: Op[], plan: TilePlan, box: Box, opts: { numbers: boolean; ranges: boolean; model?: PatternModel; highlight?: number; tag?: string; profile?: TileProfile }): Box {
+  const P = opts.profile ?? LARGE_PROFILE;
+  const totalW = plan.cols * P.cellW;
+  const totalH = plan.rows * P.cellH;
   const s = Math.min(box.w / totalW, box.h / totalH);
   const w = totalW * s;
   const h = totalH * s;
@@ -47,10 +74,10 @@ export function drawAssembly(ops: Op[], plan: TilePlan, box: Box, opts: { number
   const y0 = box.y;
   const tag = opts.tag ?? "asm";
   for (const t of plan.tiles) {
-    const x = x0 + t.c0 * TILE_CELL_W * s;
-    const y = y0 + t.r0 * TILE_CELL_H * s;
-    const tw = (t.c1 - t.c0) * TILE_CELL_W * s;
-    const th = (t.r1 - t.r0) * TILE_CELL_H * s;
+    const x = x0 + t.c0 * P.cellW * s;
+    const y = y0 + t.r0 * P.cellH * s;
+    const tw = (t.c1 - t.c0) * P.cellW * s;
+    const th = (t.r1 - t.r0) * P.cellH * s;
     const here = opts.highlight === t.page;
     ops.push({ k: "rect", x, y, w: tw, h: th, fill: INK, tag: `${tag}-edge` });
     const inset = opts.numbers ? 1 : 0.6;
@@ -70,15 +97,15 @@ export function drawAssembly(ops: Op[], plan: TilePlan, box: Box, opts: { number
   return { x: x0, y: y0, w, h };
 }
 
-function overviewPage(model: PatternModel, plan: TilePlan, lettersOn: boolean): PdfPage {
+function overviewPage(model: PatternModel, plan: TilePlan, lettersOn: boolean, P: TileProfile): PdfPage {
   const ops: Op[] = [];
   const W = LETTER.width;
   const contentW = W - 2 * M;
   const last = plan.tiles[plan.tiles.length - 1].page;
-  ops.push({ k: "text", x: M, y: M + 14, s: "GridCrow crochet chart: large print", size: 16, bold: true, color: INK, tag: "title" });
+  ops.push({ k: "text", x: M, y: M + 14, s: `GridCrow crochet chart: ${P.title}`, size: 16, bold: true, color: INK, tag: "title" });
   ops.push({ k: "text", x: M, y: M + 32, s: `${sizeLine(model)} · ${finishedLine(model).replace("Finished size about", "finished size about")}`, size: 10.5, color: INK, tag: "title-size" });
   ops.push({ k: "text", x: M, y: M + 46, s: NUMBERING_NOTE, size: 9, color: MUTED, tag: "title-note" });
-  ops.push({ k: "text", x: M, y: M + 58, s: "Page numbers below match the page numbers in this PDF.", size: 9, color: MUTED, tag: "title-note" });
+  ops.push({ k: "text", x: M, y: M + 58, s: P.name === "compact" ? "Compact: stitches are printed smaller than the finished piece, to use fewer pages. Page numbers below match this PDF." : "Page numbers below match the page numbers in this PDF.", size: 9, color: MUTED, tag: "title-note" });
 
   let y = M + 72;
   ops.push({ k: "text", x: M, y: y + 12, s: plan.tiles.length === 1 ? "Printing" : "How to put it together", size: 12, bold: true, color: INK, tag: "steps-title" });
@@ -108,19 +135,19 @@ function overviewPage(model: PatternModel, plan: TilePlan, lettersOn: boolean): 
   }
   const available = LETTER.height - M - infoH - (diagramTop + 20) - 10;
   let box: Box = { x: M, y: diagramTop, w: 0, h: 0 };
-  if (plan.tiles.length > 1) box = drawAssembly(ops, plan, { x: M, y: diagramTop + 20, w: contentW, h: Math.max(available, 60) }, { numbers: true, ranges: true, model, tag: "asm" });
+  if (plan.tiles.length > 1) box = drawAssembly(ops, plan, { x: M, y: diagramTop + 20, w: contentW, h: Math.max(available, 60) }, { numbers: true, ranges: true, model, tag: "asm", profile: P });
   const infoTop = plan.tiles.length > 1 ? Math.max(box.y + box.h + 14, LETTER.height - M - infoH) : diagramTop + 10;
   drawInfo(ops, model, M, infoTop, contentW, extra);
   return { width: W, height: LETTER.height, ops, meta: { kind: "overview", plan, assembly: box } };
 }
 
-function tilePage(model: PatternModel, plan: TilePlan, t: Tile, letters: boolean): PdfPage {
+function tilePage(model: PatternModel, plan: TilePlan, t: Tile, letters: boolean, P: TileProfile): PdfPage {
   const ops: Op[] = [];
   const W = LETTER.width;
   const nCols = t.c1 - t.c0;
   const nRows = t.r1 - t.r0;
-  const chartW = nCols * TILE_CELL_W;
-  const chartH = nRows * TILE_CELL_H;
+  const chartW = nCols * P.cellW;
+  const chartH = nRows * P.cellH;
   const x0 = (W - chartW) / 2;
   const y0 = CHART_TOP;
   const last = plan.tiles[plan.tiles.length - 1].page;
@@ -130,20 +157,20 @@ function tilePage(model: PatternModel, plan: TilePlan, t: Tile, letters: boolean
   ops.push({ k: "text", x: M, y: 61, s: `Columns ${model.cols - t.c1 + 1}–${model.cols - t.c0} of ${model.cols}  ·  Rows ${rr.bottom}–${rr.top} of ${model.rows}`, size: 10, bold: true, color: INK, tag: "range" });
   if (plan.tiles.length > 1) ops.push({ k: "text", x: M, y: 75, s: `Section ${t.tr + 1} down, ${t.tc + 1} across`, size: 8.5, color: MUTED, tag: "section" });
   ops.push({ k: "text", x: W - M, y: 46, s: `Page ${t.page} of ${last}`, size: 12, bold: true, color: INK, align: "right", tag: "page-id" });
-  if (plan.tiles.length > 1) drawAssembly(ops, plan, { x: W - M - 74, y: 52, w: 74, h: 36 }, { numbers: false, ranges: false, highlight: t.page, tag: "mini" });
+  if (plan.tiles.length > 1) drawAssembly(ops, plan, { x: W - M - 74, y: 52, w: 74, h: 36 }, { numbers: false, ranges: false, highlight: t.page, tag: "mini", profile: P });
 
   const region: Region = {
     x0,
     y0,
-    cellW: TILE_CELL_W,
-    cellH: TILE_CELL_H,
+    cellW: P.cellW,
+    cellH: P.cellH,
     c0: t.c0,
     c1: t.c1,
     r0: t.r0,
     r1: t.r1,
     letters,
-    letterSize: 10.5,
-    numberSize: 7,
+    letterSize: P.letterSize,
+    numberSize: P.numberSize,
     stepX: 1,
     stepY: 1,
     gutter: GUTTER,
@@ -165,16 +192,16 @@ function tilePage(model: PatternModel, plan: TilePlan, t: Tile, letters: boolean
 
   ops.push({ k: "text", x: M, y: LETTER.height - 41, s: "Print at 100% (Actual size), not Fit to page. Bold lines are where pages join: trim to the line, match the ticks, tape.", size: 8, color: MUTED, tag: "footer" });
   ops.push({ k: "text", x: M, y: LETTER.height - 30, s: "Row 1 is the bottom row; stitch 1 is at the right. Numbers count the whole chart, not just this page.", size: 8, color: MUTED, tag: "footer-note" });
-  return { width: W, height: LETTER.height, ops, meta: { kind: "tile", tile: t, chart: { x0, y0, cellW: TILE_CELL_W, cellH: TILE_CELL_H } } };
+  return { width: W, height: LETTER.height, ops, meta: { kind: "tile", tile: t, chart: { x0, y0, cellW: P.cellW, cellH: P.cellH } } };
 }
 
 /** Large Print: an overview page, then the chart in pages that join along bold alignment lines. */
-export function layoutTiled(model: PatternModel, options: { letters: boolean }): PdfPage[] {
-  const plan = tilePlanFor(model);
-  return [overviewPage(model, plan, options.letters), ...plan.tiles.map((t) => tilePage(model, plan, t, options.letters))];
+export function layoutTiled(model: PatternModel, options: { letters: boolean }, profile: TileProfile = LARGE_PROFILE): PdfPage[] {
+  const plan = tilePlanFor(model, profile);
+  return [overviewPage(model, plan, options.letters, profile), ...plan.tiles.map((t) => tilePage(model, plan, t, options.letters, profile))];
 }
 
 /** How many pages Large Print makes for a chart of this size (the overview page plus the chart pages), without building them. */
-export function tiledPageCount(cols: number, rows: number): number {
-  return 1 + planTiles(cols, rows, TILE_MAX_COLS, TILE_MAX_ROWS, 2).tiles.length;
+export function tiledPageCount(cols: number, rows: number, profile: TileProfile = LARGE_PROFILE): number {
+  return 1 + planTiles(cols, rows, profile.maxCols, profile.maxRows, 2).tiles.length;
 }
