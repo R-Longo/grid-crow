@@ -2165,13 +2165,14 @@ legend {
 /* ----- phone held upright ----- */
 @media (max-width: 35.99rem) {
   .app {
-    padding: 4px;
+    padding: 4px 6px;
   }
   .panel:has(.chart) {
-    padding: 4px;
+    padding: 4px 6px;
   }
+  /* About 16px from each screen edge in all: phones with curved edges clip anything closer. */
   .chart {
-    padding: 0 2px;
+    padding: 0 4px;
     border: 0;
     background: none;
   }
@@ -2186,7 +2187,7 @@ legend {
 /* ----- small tablet or phone held sideways: slim rail beside the chart ----- */
 @media (max-width: 56.24rem) and (min-width: 36rem) {
   .app {
-    padding: var(--space-1);
+    padding: var(--space-1) var(--space-3);
   }
   .panel:has(.chart) {
     padding: var(--space-1);
@@ -2367,4 +2368,11 @@ legend {
 /* A desktop app window can be dragged very small: keep the page from collapsing, and let it scroll instead. */
 body {
   min-width: 17.5rem;
+}
+
+/* Phones: the setup bar's Change/Hide button gets the same distance from the screen edge as the chart below it. */
+@media (max-width: 56.24rem) {
+  .setupbar {
+    padding-inline: 4px;
+  }
 }
