@@ -2355,3 +2355,16 @@ legend {
   color: var(--text);
   font-weight: 600;
 }
+
+/* ---------- Installed app and live resizing (Phase 3) ---------- */
+/* In the installed app there is no address bar to pull down: stop an accidental pull-to-refresh or rubber-band scroll while painting and panning. */
+@media (display-mode: standalone), (display-mode: minimal-ui), (display-mode: window-controls-overlay) {
+  html,
+  body {
+    overscroll-behavior: none;
+  }
+}
+/* A desktop app window can be dragged very small: keep the page from collapsing, and let it scroll instead. */
+body {
+  min-width: 17.5rem;
+}

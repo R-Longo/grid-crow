@@ -217,3 +217,11 @@ Once a chart opens, the editor is a workspace the height of the screen (under th
 - Small tablet / phone sideways (36rem to 56.24rem): chart plus a slim 9.5rem rail of tools and colors (header buttons become icon-only, still 44px).
 - Laptop and desktop (>=56.25rem): chart area plus a steady 21rem sidebar (title, view, tools, colors, download); sidebar scrolls on its own.
 - Test: `scripts/e2e/editor_layout_browser.py` (10 viewports plus live resize/rotation).
+
+## 18. Installed app, live resizing and rotation (Phase 3)
+
+- Manifest: added `id`, `lang`, `display_override` (standalone, minimal-ui); orientation stays `any` (no rotation lock).
+- Installed app: `overscroll-behavior: none` in standalone / minimal-ui / window-controls-overlay so painting and panning cannot trigger pull-to-refresh. `body` has a 17.5rem minimum width so a tiny app window scrolls instead of collapsing.
+- Already in place and now tested: safe-area insets on the page and the editor workspace, `svh` workspace height (no resize wobble as a phone address bar hides), measured chart fitting via ResizeObserver.
+- Test: `scripts/e2e/resize_browser.py` (10 odd window sizes up to 4K and down to 360x640 / 700x320, rotation sequences, zoomed-in then resized, a storm of 25 random resizes, resize in the middle of a brush stroke, no console errors).
+- Service worker cache v28.
