@@ -2084,14 +2084,14 @@ legend {
   margin-inline: auto;
 }
 
-/* Laptop and desktop: a roomier card (about 700px) around the same single-column setup, controls about 33.5rem wide. */
+/* Laptop and desktop: a roomier card (about 700px) around the same single-column setup, controls about 580px wide. */
 @media (min-width: 56.25rem) {
   .panel {
     width: min(100%, 43.75rem);
-    padding-inline: 5rem;
+    padding-inline: 3.75rem;
   }
   .setup__body {
-    max-width: 33.5rem;
+    max-width: none;
   }
 }
 
@@ -2115,6 +2115,11 @@ legend {
 .setup__body {
   max-width: 33rem;
   margin-inline: auto;
+}
+@media (min-width: 56.25rem) {
+  .setup__body {
+    max-width: none;
+  }
 }
 
 .brand__logo {
@@ -2300,27 +2305,27 @@ legend {
   }
 }
 
-/* ---------- Tagline: real text in a clean sans-serif, warm cream (replaces the pixel lettering that was in the logo) ---------- */
+/* ---------- Tagline: real text in Fraunces, warm cream (replaces the pixel lettering that was in the logo) ---------- */
 @font-face {
-  font-family: "Inter";
+  font-family: "Fraunces";
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url("../assets/fonts/inter-latin-400-normal.woff2") format("woff2");
+  src: url("../assets/fonts/fraunces-latin-400-normal.woff2") format("woff2");
 }
 @font-face {
-  font-family: "Inter";
+  font-family: "Fraunces";
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("../assets/fonts/inter-latin-500-normal.woff2") format("woff2");
+  src: url("../assets/fonts/fraunces-latin-500-normal.woff2") format("woff2");
 }
 .brand__tagline {
   margin: calc(-1 * var(--space-1)) 0 var(--space-3);
   text-align: center;
-  font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: "Fraunces", Georgia, "Times New Roman", serif;
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 1.35;
   letter-spacing: 0.01em;
   color: #f0dfc2;
@@ -2328,5 +2333,15 @@ legend {
 @media (max-width: 24rem) {
   .brand__tagline {
     font-size: 0.9375rem;
+  }
+}
+
+/* Sidebar (laptop/desktop): breathing room before its scrollbar, and a slim dark scrollbar so it does not cover the controls. */
+@media (min-width: 56.25rem) {
+  .chart__side {
+    padding-right: var(--space-3);
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(240, 223, 194, 0.35) transparent;
   }
 }

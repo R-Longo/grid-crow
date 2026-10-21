@@ -645,7 +645,7 @@ export function ChartView({
           : selectedTool === "pick"
             ? "Tap a stitch to copy its color, then paint."
             : "Drag to move around. Two fingers always pan and zoom.";
-  const helpFull = blank && view === "chart" ? `${help} Change any yarn color with Edit this color.` : help;
+  const helpFull = view === "chart" ? `${help} Change any yarn color with Edit this color.` : help;
   const summary = `${matrix.cols} stitches × ${matrix.rows} rows · ${matrix.palette.length} ${
     matrix.palette.length === 1 ? "color" : "colors"
   }`;
@@ -693,18 +693,18 @@ export function ChartView({
       </button>
     </>
   );
-  const colorEditor = blank ? (
+  const colorEditor = (
     <ColorEditor
       slot={active}
       color={matrix.palette[active] ?? matrix.palette[0]}
       count={counts[active] ?? 0}
-      isBackground={active === BLANK_BACKGROUND_SLOT}
+      isBackground={blank && active === BLANK_BACKGROUND_SLOT}
       onApply={recolorActive}
       describeSlot={(i) =>
-        `${matrix.palette[i].hex.toUpperCase()}${i === BLANK_BACKGROUND_SLOT ? ", your background" : ""}`
+        `${matrix.palette[i].hex.toUpperCase()}${blank && i === BLANK_BACKGROUND_SLOT ? ", your background" : ""}`
       }
     />
-  ) : null;
+  );
   const palette = (
     <ul ref={paletteRef} className="chart__palette" aria-labelledby={colorsId}>
       {matrix.palette.map((p, i) => (

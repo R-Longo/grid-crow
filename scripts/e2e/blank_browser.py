@@ -218,7 +218,7 @@ def scenario(page, tag, cdp=None):
     radio(page, "12x16"); (unfold(page), page.get_by_role("button", name=re.compile("Create My Crochet Grid"))).__getitem__(1).click()
     page.wait_for_selector("[data-testid=chart-canvas]", state="visible", timeout=90000); time.sleep(0.6)
     if touch: opts(page).click(); time.sleep(0.3)  # on a phone the Original / Chart switch is in the Options panel
-    check(f"{tag}: Convert an Image still builds a chart, with Original view and no color editor", page.get_by_role("button", name="Original").count() == 1 and page.locator("[data-testid=edit-color-open]").count() == 0 and (grid_dims(page) or (0, 0))[0:2] == (48, 72))
+    check(f"{tag}: Convert an Image still builds a chart, with Original view and a color editor", page.get_by_role("button", name="Original").count() == 1 and page.locator("[data-testid=edit-color-open]").count() == 1 and (grid_dims(page) or (0, 0))[0:2] == (48, 72))
     check(f"{tag}: no page errors", not errors, "; ".join(errors)[:200])
 
 def desktop(p):
