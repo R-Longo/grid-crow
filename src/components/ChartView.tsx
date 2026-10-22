@@ -15,6 +15,7 @@ import {
   stitchLabel,
 } from "../engine/editor/coords";
 import { cellEdge } from "../engine/editor/coords";
+import { advance, clampProgress, nextStitch, percentDone, progressAfterTap, toEndOfRow } from "../engine/track/progress";
 import type { ChartLayout, Stitch } from "../engine/editor/coords";
 import type { Mode } from "../engine/editor/gesture";
 import { colorCounts } from "../engine/editor/paint";
@@ -90,6 +91,9 @@ interface ChartViewProps {
   onMatrixChange?: (matrix: StitchMatrix, converted: StitchMatrix) => void;
   /** Extra buttons in the download panel (the project backup file). */
   onBackup?: () => void;
+  /** Stitches crocheted so far, in working order. Kept (and saved) by the page, so it travels with the project. */
+  progress?: number;
+  onProgressChange?: (progress: number) => void;
 }
 
 /**
@@ -111,6 +115,8 @@ export function ChartView({
   initialMatrix,
   onMatrixChange,
   onBackup,
+  progress = 0,
+  onProgressChange,
 }: ChartViewProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -149,6 +155,15 @@ export function ChartView({
   const [width, setWidth] = useState(0);
   const [viewH, setViewH] = useState(0);
   const [mode, setMode] = useState<Mode>("draw");
+  // Track mode: tapping marks stitches as crocheted instead of painting. Dragging and pinching still move around.
+  const [tracking, setTracking] = useState(false);
+  const [confirmStart, setConfirmStart] = useState(false);
+  const trackRef = useRef<HTMLCanvasElement>(null);
+  const tapRef = useRef<{ id: number; x: number; y: number; moved: boolean } | null>(null);
+  const trackingRef = useRef(false);
+  trackingRef.current = tracking;
+  const progressRef = useRef(progress);
+  progressRef.current = progress;
   const [active, setActive] = useState(startColor);
   const [tool, setTool] = useState<Tool>("paint");
   const [hover, setHover] = useState<Stitch | null>(null);
@@ -171,7 +186,7 @@ export function ChartView({
   if (!sessionRef.current || sessionRef.current.converted !== converted)
     sessionRef.current = newSession(converted, startColor, initialMatrix);
   const session = sessionRef.current;
-  session.mode = mode;
+  session.mode = tracking ? "pan" : mode;
   session.tool = tool;
   const viewRef = useRef(view);
   const zoomRef = useRef(1);
@@ -272,6 +287,53 @@ export function ChartView({
       ctx.fillRect(0, Math.min(pxH - 1, Math.round(r * cellH)), pxW, 1);
     }
   }, [lines, blank, matrix.cols, matrix.rows, cellW, cellH, pxW, pxH, compact]);
+
+  // Track overlay: stitches already crocheted are veiled, the row being worked is outlined and the next stitch is boxed.
+  const trackPos = nextStitch(progress, matrix.cols, matrix.rows);
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el || pxW === 0) return;
+    el.width = pxW;
+    el.height = pxH;
+    const ctx = el.getContext("2d");
+    if (!ctx) return;
+    ctx.clearRect(0, 0, pxW, pxH);
+    if (!tracking) return;
+    const { cols, rows } = matrix;
+    const x = (c: number) => cellEdge(c, cellW);
+    const y = (r: number) => cellEdge(r, cellH);
+    ctx.fillStyle = "rgba(20, 16, 12, 0.62)";
+    const fullRows = Math.floor(progress / cols);
+    if (fullRows > 0) ctx.fillRect(0, y(rows - fullRows), pxW, pxH - y(rows - fullRows));
+    const j = progress % cols;
+    if (fullRows < rows && j > 0) {
+      const ri = rows - 1 - fullRows;
+      if (fullRows % 2 === 0) ctx.fillRect(x(cols - j), y(ri), pxW - x(cols - j), y(ri + 1) - y(ri));
+      else ctx.fillRect(0, y(ri), x(j), y(ri + 1) - y(ri));
+    }
+    if (trackPos) {
+      ctx.strokeStyle = "#e8b84f";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(1, y(trackPos.rowIndex) + 1, pxW - 2, y(trackPos.rowIndex + 1) - y(trackPos.rowIndex) - 2);
+      ctx.lineWidth = Math.max(2, Math.min(4, cellW / 3));
+      ctx.strokeStyle = "#ffffff";
+      ctx.strokeRect(x(trackPos.col), y(trackPos.rowIndex), x(trackPos.col + 1) - x(trackPos.col), y(trackPos.rowIndex + 1) - y(trackPos.rowIndex));
+    }
+  }, [tracking, progress, matrix.cols, matrix.rows, cellW, cellH, pxW, pxH, compact, drawVersion]);
+
+  // Keep the row being worked in view when it moves.
+  useEffect(() => {
+    const sc = scrollRef.current;
+    if (!tracking || !sc || !trackPos || cellH === 0) return;
+    const top = cellEdge(trackPos.rowIndex, cellH);
+    const bottom = cellEdge(trackPos.rowIndex + 1, cellH);
+    if (top < sc.scrollTop || bottom > sc.scrollTop + sc.clientHeight)
+      sc.scrollTop = Math.max(0, top - sc.clientHeight / 2 + (bottom - top) / 2);
+    const left = cellEdge(trackPos.col, cellW);
+    const right = cellEdge(trackPos.col + 1, cellW);
+    if (left < sc.scrollLeft || right > sc.scrollLeft + sc.clientWidth)
+      sc.scrollLeft = Math.max(0, left - sc.clientWidth / 2 + (right - left) / 2);
+  }, [tracking, trackPos?.row, trackPos?.col, cellW, cellH]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Original (cropped) picture, for comparison only. Read-only: never part of the chart, never edited.
   useEffect(() => {
@@ -448,10 +510,18 @@ export function ChartView({
     [applyEffects, stitchAt],
   );
 
+  const setProgress = (n: number) => {
+    const next = clampProgress(n, matrix.cols, matrix.rows);
+    if (next !== progressRef.current) onProgressChange?.(next);
+  };
   const kindOf = (t: string) => (t === "touch" ? "touch" : t === "pen" ? "pen" : "mouse");
 
   const onPointerDown = (e: React.PointerEvent) => {
     if (viewRef.current !== "chart") return;
+    if (trackingRef.current) {
+      // A tap marks a stitch; a drag or a second finger is moving around instead.
+      tapRef.current = tapRef.current ? { ...tapRef.current, moved: true } : { id: e.pointerId, x: e.clientX, y: e.clientY, moved: false };
+    }
     if (e.button === 1) e.preventDefault(); // no middle-click autoscroll
     try {
       stageRef.current?.setPointerCapture(e.pointerId);
@@ -466,10 +536,29 @@ export function ChartView({
       const st = stitchAt(e.clientX, e.clientY);
       setHover((h) => (h === st || (h && st && h.col === st.col && h.row === st.row) ? h : st));
     }
+    const tap = tapRef.current;
+    if (tap && !tap.moved && Math.hypot(e.clientX - tap.x, e.clientY - tap.y) > 8) tap.moved = true;
     feed({ type: "move", id: e.pointerId, x: e.clientX, y: e.clientY });
   };
-  const onPointerUp = (e: React.PointerEvent) => feed({ type: "up", id: e.pointerId });
-  const onPointerCancel = (e: React.PointerEvent) => feed({ type: "cancel", id: e.pointerId });
+  const onPointerUp = (e: React.PointerEvent) => {
+    const tap = tapRef.current;
+    if (tap && tap.id === e.pointerId) {
+      tapRef.current = null;
+      if (!tap.moved && trackingRef.current) {
+        const st = stitchAt(e.clientX, e.clientY);
+        if (st) {
+          const after = progressAfterTap(st.col, st.row, matrix.cols, matrix.rows);
+          // Tapping the last stitch you marked takes it back, so a slip of the finger is easy to fix.
+          setProgress(after === progressRef.current ? after - 1 : after);
+        }
+      }
+    }
+    feed({ type: "up", id: e.pointerId });
+  };
+  const onPointerCancel = (e: React.PointerEvent) => {
+    if (tapRef.current?.id === e.pointerId) tapRef.current = null;
+    feed({ type: "cancel", id: e.pointerId });
+  };
 
   // Leaving the chart view in the middle of a gesture must not leave a stroke half-open.
   useLayoutEffect(() => {
@@ -684,7 +773,7 @@ export function ChartView({
       <button type="button" aria-pressed={view === "chart"} onClick={() => setView("chart")}>
         Chart
       </button>
-      <button type="button" aria-pressed={view === "original"} disabled={!image} onClick={() => setView("original")}>
+      <button type="button" aria-pressed={view === "original"} disabled={!image || tracking} onClick={() => setView("original")}>
         Original
       </button>
     </div>
@@ -753,7 +842,7 @@ export function ChartView({
       ))}
     </ul>
   );
-  const status = compact ? (
+  const editStatus = compact ? (
     <p className="chart__status" data-testid="chart-status" ref={statusRef} tabIndex={-1}>
       <span className="chart__swatch" style={{ background: activeColor.hex }} aria-hidden="true" />
       <span className="chart__current">
@@ -784,6 +873,73 @@ export function ChartView({
       </span>
     </p>
   );
+  const total = matrix.cols * matrix.rows;
+  const finished = progress >= total;
+  const trackBar = (
+    <div className="track" data-testid="track-bar">
+      <p className="track__where" data-testid="track-where" role="status" aria-live="polite">
+        {finished || !trackPos ? (
+          <strong>All {matrix.rows} rows are done. Beautiful work.</strong>
+        ) : (
+          <>
+            <span>
+              Row <strong>{trackPos.row}</strong> of {matrix.rows}
+            </span>
+            <span>
+              Stitch <strong>{trackPos.stitch}</strong> of {matrix.cols}
+            </span>
+            <span className="track__dir">{trackPos.direction === "left" ? "← right to left" : "left to right →"}</span>
+          </>
+        )}
+        <span className="track__pct" data-testid="track-pct">{percentDone(progress, matrix.cols, matrix.rows)}% done</span>
+      </p>
+      <div className="track__buttons">
+        <button type="button" className="chart__small track__next" data-testid="track-next" disabled={finished} onClick={() => setProgress(advance(progress, 1, matrix.cols, matrix.rows))}>
+          Next stitch
+        </button>
+        <button type="button" className="chart__small" data-testid="track-back" disabled={progress === 0} onClick={() => setProgress(advance(progress, -1, matrix.cols, matrix.rows))}>
+          Back
+        </button>
+        <button type="button" className="chart__small" data-testid="track-row" disabled={finished} onClick={() => setProgress(advance(progress, toEndOfRow(progress, matrix.cols, matrix.rows), matrix.cols, matrix.rows))}>
+          Finish row
+        </button>
+        {confirmStart ? (
+          <>
+            <button type="button" className="chart__small" data-testid="track-restart-yes" onClick={() => { setConfirmStart(false); setProgress(0); }}>
+              Yes, start over
+            </button>
+            <button type="button" className="chart__small" onClick={() => setConfirmStart(false)}>
+              Keep progress
+            </button>
+          </>
+        ) : (
+          <button type="button" className="chart__small" data-testid="track-restart" disabled={progress === 0} onClick={() => setConfirmStart(true)}>
+            Start over
+          </button>
+        )}
+      </div>
+      <p className="track__hint">Tap a stitch to mark everything up to it. Tap the last marked stitch again to take it back.</p>
+    </div>
+  );
+  const status = tracking ? trackBar : editStatus;
+  const modeToggle = (
+    <div className="chart__toggle chart__modebar" role="group" aria-label="What to do">
+      <button type="button" data-testid="mode-edit" aria-pressed={!tracking} onClick={() => setTracking(false)}>
+        Edit
+      </button>
+      <button
+        type="button"
+        data-testid="mode-track"
+        aria-pressed={tracking}
+        onClick={() => {
+          setView("chart");
+          setTracking(true);
+        }}
+      >
+        Track
+      </button>
+    </div>
+  );
   const chartBox = (
     <div ref={wrapRef} className="chart__wrap">
       <div className="chart__frame" style={{ gridTemplateColumns: `${gutter}px auto` }}>
@@ -805,7 +961,7 @@ export function ChartView({
         >
           <div
             ref={stageRef}
-            className={`chart__stage${view === "chart" ? ` chart__stage--${mode}${mode === "draw" && tool !== "paint" ? ` chart__stage--${tool}` : ""}` : ""}`}
+            className={`chart__stage${view === "chart" ? ` chart__stage--${tracking ? "pan" : mode}${!tracking && mode === "draw" && tool !== "paint" ? ` chart__stage--${tool}` : ""}` : ""}`}
             style={{ width: pxW || undefined, height: pxH || undefined }}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
@@ -831,6 +987,7 @@ export function ChartView({
               data-testid="chart-canvas"
             />
             <canvas ref={linesRef} className="chart__lines" aria-hidden="true" hidden={view !== "chart"} />
+            <canvas ref={trackRef} className="chart__lines" aria-hidden="true" data-testid="track-canvas" hidden={view !== "chart" || !tracking} />
             <canvas
               ref={originalRef}
               className="chart__canvas"
@@ -838,7 +995,7 @@ export function ChartView({
               aria-label="Your original picture, cropped"
               hidden={view !== "original"}
             />
-            {view === "chart" && hover ? (
+            {view === "chart" && hover && !tracking ? (
               <>
                 <div
                   className="chart__hl chart__hl--row"
@@ -1025,10 +1182,11 @@ export function ChartView({
           )}
         </div>
 
+        {modeToggle}
         {chartBox}
         {status}
 
-        <div className="chart__dock">
+        <div className="chart__dock" hidden={tracking}>
           <h3 id={colorsId} className="visually-hidden">
             Yarn colors
           </h3>
@@ -1053,6 +1211,7 @@ export function ChartView({
       <div className="chart__layout">
         <div className="chart__left">
           <div className="chart__main">
+            {modeToggle}
             {status}
             {chartBox}
           </div>
@@ -1071,7 +1230,7 @@ export function ChartView({
             {viewToggle}
             {gridCheck}
           </div>
-          <div className="chart__tools" role="group" aria-labelledby={toolsId}>
+          <div className="chart__tools" role="group" aria-labelledby={toolsId} hidden={tracking}>
             <h3 id={toolsId} className="chart__heading">
               Editing tools
             </h3>

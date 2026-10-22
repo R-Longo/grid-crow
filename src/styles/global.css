@@ -2401,3 +2401,17 @@ body {
 .projects__btn--danger { border-color: #d9826a; }
 .setupbar__saved { font-size: 0.8125rem; opacity: 0.8; margin-left: auto; margin-right: 0.75rem; }
 .download__backup { margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; }
+
+/* ---- Track mode ---- */
+.chart__modebar { align-self: flex-start; margin: 0 0 var(--space-2); }
+.chart__dock[hidden], .chart__tools[hidden] { display: none; }
+.track { display: flex; flex-direction: column; gap: 0.5rem; margin: var(--space-2) 0; }
+.track__where { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; align-items: baseline; margin: 0; font-size: 1rem; }
+.track__where strong { color: #e8b84f; font-size: 1.25rem; }
+.track__dir { opacity: 0.8; }
+.track__pct { margin-left: auto; opacity: 0.85; }
+.track__buttons { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.track__next { background: #e8b84f; color: #1a1714; border-color: #e8b84f; font-weight: 700; min-width: 8rem; }
+.track__next:disabled { opacity: 0.5; }
+.track__hint { margin: 0; font-size: 0.8125rem; opacity: 0.75; }
+.chart__stage--pan { touch-action: none; }

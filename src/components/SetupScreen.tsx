@@ -77,6 +77,16 @@ export function SetupScreen() {
   const matrixRef = useRef<StitchMatrix | null>(null);
   const savedMatrixRef = useRef<StitchMatrix | null>(null);
   const progressRef = useRef(0);
+  const [progress, setProgressState] = useState(0);
+  const changeProgress = useCallback(
+    (n: number) => {
+      progressRef.current = n;
+      setProgressState(n);
+      scheduleSaveRef.current();
+    },
+    [],
+  );
+  const scheduleSaveRef = useRef<() => void>(() => {});
   const resultRef = useRef<typeof result>(null);
   const versionRef = useRef(0);
   const timerRef = useRef<number | undefined>(undefined);
@@ -124,6 +134,8 @@ export function SetupScreen() {
     timerRef.current = window.setTimeout(() => void writeNow(), 1200);
   }, [writeNow]);
 
+  scheduleSaveRef.current = scheduleSave;
+
   // Leaving the page (or the app going to the background) saves right away instead of waiting.
   useEffect(() => {
     const flush = () => {
@@ -166,6 +178,7 @@ export function SetupScreen() {
     matrixRef.current = res.matrix;
     savedMatrixRef.current = null;
     progressRef.current = 0;
+    setProgressState(0);
     scheduleSave();
   };
 
@@ -203,6 +216,7 @@ export function SetupScreen() {
     matrixRef.current = cur;
     savedMatrixRef.current = cur;
     progressRef.current = data.progress;
+    setProgressState(data.progress);
     setSaveState("saved");
     setStatus("done");
     setResult({ matrix: conv, current: cur, crop: data.crop, aspect: data.aspect, blank: data.kind === "blank" });
@@ -638,6 +652,8 @@ export function SetupScreen() {
           initialMatrix={result.current}
           onMatrixChange={onMatrixChange}
           onBackup={saveState === "none" ? undefined : exportBackup}
+          progress={progress}
+          onProgressChange={changeProgress}
           onEditedChange={(n, afterDownload) => {
             setEdited(n);
             setSinceDownload(afterDownload);

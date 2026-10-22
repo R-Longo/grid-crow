@@ -233,3 +233,10 @@ Once a chart opens, the editor is a workspace the height of the screen (under th
 - Autosave runs 1.2 s after a change and immediately when the page is hidden. While a project is "Saved on this device" the discard-edits warnings stay quiet; if storage fails they return.
 - Undo history is not saved. `progress` (stitches crocheted, working order) is stored now for the tracker.
 - Tests: `format.test.ts`, `save_project_browser.py`. Tests about the discard warnings run with IndexedDB disabled.
+
+## 20. Row and stitch tracker (Phase 4b)
+
+- Edit | Track switch above the chart. In Track mode taps mark stitches instead of painting; drag and pinch still move around.
+- Progress is one number (stitches crocheted, working order: row 1 at the bottom, stitch 1 on the right, odd rows right to left). Logic and tests: `src/engine/track/progress.ts`.
+- Crocheted stitches are veiled, the row being worked is outlined in gold, the next stitch is boxed. Buttons: Next stitch, Back, Finish row, Start over. Tapping the last marked stitch again takes it back.
+- Progress autosaves with the project and is included in the `.gridcrow` backup. Test: `scripts/e2e/tracker_browser.py`.
