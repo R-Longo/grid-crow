@@ -912,7 +912,7 @@ legend {
   margin: 0;
   overflow: auto;
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: 0; /* square corners: a stitch grid has square edges, and rounding clips the corner stitches */
   background: var(--raven-black);
 }
 

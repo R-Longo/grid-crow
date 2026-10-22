@@ -315,9 +315,16 @@ export function ChartView({
       ctx.strokeStyle = "#e8b84f";
       ctx.lineWidth = 2;
       ctx.strokeRect(1, y(trackPos.rowIndex) + 1, pxW - 2, y(trackPos.rowIndex + 1) - y(trackPos.rowIndex) - 2);
-      ctx.lineWidth = Math.max(2, Math.min(4, cellW / 3));
+      // A dark outline under a white one, so the next stitch shows on light and dark yarn alike.
+      const bw = Math.max(2, Math.min(4, cellW / 3));
+      const bx = x(trackPos.col), by = y(trackPos.rowIndex);
+      const bwid = x(trackPos.col + 1) - bx, bhei = y(trackPos.rowIndex + 1) - by;
+      ctx.lineWidth = bw + 2;
+      ctx.strokeStyle = "#111111";
+      ctx.strokeRect(bx, by, bwid, bhei);
+      ctx.lineWidth = bw;
       ctx.strokeStyle = "#ffffff";
-      ctx.strokeRect(x(trackPos.col), y(trackPos.rowIndex), x(trackPos.col + 1) - x(trackPos.col), y(trackPos.rowIndex + 1) - y(trackPos.rowIndex));
+      ctx.strokeRect(bx, by, bwid, bhei);
     }
   }, [tracking, progress, matrix.cols, matrix.rows, cellW, cellH, pxW, pxH, compact, drawVersion]);
 
@@ -922,6 +929,23 @@ export function ChartView({
     </div>
   );
   const status = tracking ? trackBar : editStatus;
+  const modeButton = (
+    <button
+      type="button"
+      className="chart__small chart__modebtn"
+      data-testid={tracking ? "mode-edit" : "mode-track"}
+      onClick={() => {
+        if (tracking) setTracking(false);
+        else {
+          setView("chart");
+          setTracking(true);
+        }
+      }}
+    >
+      <Icon name={tracking ? "pencil" : "check"} size={18} />
+      <span className="chart__btntext">{tracking ? "Edit" : "Track"}</span>
+    </button>
+  );
   const modeToggle = (
     <div className="chart__toggle chart__modebar" role="group" aria-label="What to do">
       <button type="button" data-testid="mode-edit" aria-pressed={!tracking} onClick={() => setTracking(false)}>
@@ -1116,6 +1140,7 @@ export function ChartView({
       >
         <div className="chart__bar">
           <h2 className="visually-hidden">Your chart</h2>
+          {modeButton}
           {fitButton}
           <button
             ref={optionsBtnRef}
@@ -1182,7 +1207,6 @@ export function ChartView({
           )}
         </div>
 
-        {modeToggle}
         {chartBox}
         {status}
 
