@@ -4,6 +4,13 @@ Run with the dev server up (npx vite --port 5173 --host 127.0.0.1). Chromium onl
 import re, sys, time
 from playwright.sync_api import sync_playwright
 
+# These tests are about the "you'll lose edits" warnings, which only matter when a project can't be saved on the device.
+from playwright.sync_api import Browser as _B
+_orig_nc = _B.new_context
+def _nc(self, *a, **k):
+    c = _orig_nc(self, *a, **k); c.add_init_script("Object.defineProperty(window,'indexedDB',{value:undefined})"); return c
+_B.new_context = _nc
+
 URL = "http://127.0.0.1:5173/"
 IMG = "/tmp/claude-0/scratch/hyb/sun-card-34.png"
 COLS, ROWS = 96, 144
@@ -28,7 +35,7 @@ def pick_radio(page, value):
 
 def setup(page, size="24x32", colors="10"):
     page.goto(URL); page.wait_for_load_state("networkidle")
-    page.set_input_files("input[type=file]", IMG)
+    page.set_input_files("input[type=file]:not([data-testid=import-backup])", IMG)
     for value in (size, colors): pick_radio(page, value)
     create(page)
 
@@ -156,7 +163,7 @@ def scenario(page, tag, cdp=None):
     check(f"{tag}: Keep editing leaves the edited chart exactly as it was", has_chart(page) and changed(page) == n)
     # Removing / replacing the picture
     # (the upload input replaces the file)
-    page.set_input_files("input[type=file]", IMG); time.sleep(0.4)
+    page.set_input_files("input[type=file]:not([data-testid=import-backup])", IMG); time.sleep(0.4)
     check(f"{tag}: choosing a picture again asks first", dlg(page).count() == 1 and "picture" in dlg(page).inner_text())
     answer(page, "keep", touch)
 

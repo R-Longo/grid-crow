@@ -28,7 +28,7 @@ def pick_radio(page, value):
             time.sleep(0.5)
 def setup(page):
     page.goto(URL); page.wait_for_load_state("networkidle")
-    page.set_input_files("input[type=file]", IMG)
+    page.set_input_files("input[type=file]:not([data-testid=import-backup])", IMG)
     for v in ("24x32", "10"): pick_radio(page, v)
     (unfold(page), page.get_by_role("button", name=re.compile("Create My Crochet Grid"))).__getitem__(1).click()
     page.wait_for_selector("[data-testid=chart-canvas]", state="visible", timeout=60000)

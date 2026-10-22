@@ -15,7 +15,7 @@ def run(p):
     for (w, h, touch) in [(1440, 900, False), (390, 844, True)]:
         tag = f"{w}x{h}"
         ctx = b.new_context(viewport={"width": w, "height": h}, has_touch=touch, accept_downloads=True); pg = ctx.new_page(); errs = []; pg.on("pageerror", lambda e: errs.append(str(e)))
-        pg.goto(URL); pg.wait_for_selector(".upload"); pg.set_input_files("input[type=file]", IMG); time.sleep(1)
+        pg.goto(URL); pg.wait_for_selector(".upload"); pg.set_input_files("input[type=file]:not([data-testid=import-backup])", IMG); time.sleep(1)
         pg.locator('input[type=radio][value="24x32"]').check(force=True); time.sleep(0.3)
         pg.get_by_role("button", name=re.compile("Create My Crochet Grid")).click(); pg.wait_for_selector("[data-testid=chart-canvas]", state="visible", timeout=90000); time.sleep(1)
         if touch: pg.get_by_role("button", name="Download").click(); time.sleep(0.3)

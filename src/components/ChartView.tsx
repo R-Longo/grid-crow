@@ -64,8 +64,8 @@ const CELL_ASPECT = ROWS_PER_INCH / STITCHES_PER_INCH; // 1.125
 const LIGHT_LINES = { light: "rgba(255,255,255,0.16)", heavy: "rgba(255,255,255,0.4)" };
 const GRAY_LINES = { light: "rgba(110,110,110,0.45)", heavy: "rgba(70,70,70,0.8)" };
 
-function newSession(converted: StitchMatrix, startColor: number): EditorSession {
-  const session = new EditorSession(converted);
+function newSession(converted: StitchMatrix, startColor: number, current?: StitchMatrix): EditorSession {
+  const session = new EditorSession(converted, current);
   if (startColor > 0 && startColor < converted.palette.length) session.setActive(startColor);
   return session;
 }
@@ -84,6 +84,12 @@ interface ChartViewProps {
   blank?: boolean;
   /** The yarn color painting starts with (a blank canvas starts with black, not the white background). */
   startColor?: number;
+  /** A saved, hand-edited version of the chart to open with (the converted chart is still kept for "Reset"). */
+  initialMatrix?: StitchMatrix;
+  /** Told whenever the editable chart changes, with the converted chart it belongs to (so a stale report can be ignored). */
+  onMatrixChange?: (matrix: StitchMatrix, converted: StitchMatrix) => void;
+  /** Extra buttons in the download panel (the project backup file). */
+  onBackup?: () => void;
 }
 
 /**
@@ -102,6 +108,9 @@ export function ChartView({
   onEditedChange,
   blank = false,
   startColor = 0,
+  initialMatrix,
+  onMatrixChange,
+  onBackup,
 }: ChartViewProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -143,7 +152,7 @@ export function ChartView({
   const [active, setActive] = useState(startColor);
   const [tool, setTool] = useState<Tool>("paint");
   const [hover, setHover] = useState<Stitch | null>(null);
-  const [matrix, setMatrix] = useState<StitchMatrix>(converted);
+  const [matrix, setMatrix] = useState<StitchMatrix>(initialMatrix ?? converted);
   const [changed, setChanged] = useState(0);
   // The chart as it was when the last download started (null before the first download). Downloaded edits are safe in the file.
   const [checkpoint, setCheckpoint] = useState<ExportCheckpoint | null>(null);
@@ -160,7 +169,7 @@ export function ChartView({
   // gesture in progress. A new conversion starts a new session.
   const sessionRef = useRef<EditorSession | null>(null);
   if (!sessionRef.current || sessionRef.current.converted !== converted)
-    sessionRef.current = newSession(converted, startColor);
+    sessionRef.current = newSession(converted, startColor, initialMatrix);
   const session = sessionRef.current;
   session.mode = mode;
   session.tool = tool;
@@ -184,10 +193,15 @@ export function ChartView({
     editedCb.current?.(unsaved, downloaded);
   }, [unsaved, downloaded]);
   useEffect(() => () => editedCb.current?.(0, false), []);
+  const matrixCb = useRef(onMatrixChange);
+  matrixCb.current = onMatrixChange;
+  useEffect(() => {
+    matrixCb.current?.(matrix, converted);
+  }, [matrix, converted]);
 
   // A new conversion replaces the chart being edited.
   useEffect(() => {
-    setMatrix(converted);
+    setMatrix(initialMatrix ?? converted);
     setExportNote(null);
     setChanged(0);
     setConfirmReset(false);
@@ -992,6 +1006,7 @@ export function ChartView({
                 onChoices={setDownloadChoices}
                 tiledPages={tiledPageCount(matrix.cols, matrix.rows)}
                 compactPages={tiledPageCount(matrix.cols, matrix.rows, COMPACT_PROFILE)}
+                onBackup={onBackup}
               />
             </div>
           )}
@@ -1085,6 +1100,7 @@ export function ChartView({
               onChoices={setDownloadChoices}
               tiledPages={tiledPageCount(matrix.cols, matrix.rows)}
               compactPages={tiledPageCount(matrix.cols, matrix.rows, COMPACT_PROFILE)}
+                onBackup={onBackup}
             />
           </div>
           <div className="chart__edit">{utility}</div>

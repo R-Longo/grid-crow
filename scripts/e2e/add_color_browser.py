@@ -21,7 +21,7 @@ def build(page, mode):
         page.wait_for_selector("[data-testid=start-scratch]"); page.locator("[data-testid=start-scratch]").click(force=True); time.sleep(0.4)
         page.locator("[data-testid=open-blank]").click()
     else:
-        page.set_input_files("input[type=file]", IMG); time.sleep(1)
+        page.set_input_files("input[type=file]:not([data-testid=import-backup])", IMG); time.sleep(1)
         page.get_by_role("button", name=re.compile("Create My Crochet Grid")).click()
     page.wait_for_selector("[data-testid=chart-canvas]", state="visible", timeout=90000); time.sleep(0.8)
 

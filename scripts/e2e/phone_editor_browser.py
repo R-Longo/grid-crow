@@ -41,7 +41,7 @@ def phone(p):
     page.get_by_role("button", name="Fit to Screen").tap(); time.sleep(0.5)
     check("phone: Fit to Screen shows the whole chart again", whole(page))
     # picture flow folds too
-    page.goto(b.URL); page.wait_for_selector(".start__card"); page.set_input_files("input[type=file]", b.IMG); time.sleep(0.8)
+    page.goto(b.URL); page.wait_for_selector(".start__card"); page.set_input_files("input[type=file]:not([data-testid=import-backup])", b.IMG); time.sleep(0.8)
     b.radio(page, "12x16"); page.get_by_role("button", name="Create My Crochet Grid").tap()
     page.wait_for_selector("[data-testid=chart-canvas]", state="visible", timeout=60000); time.sleep(1.0)
     check("phone: a converted chart folds the setup too", page.locator("[data-testid=setup-bar]").is_visible() and "Your picture" in page.locator("[data-testid=setup-bar]").inner_text())

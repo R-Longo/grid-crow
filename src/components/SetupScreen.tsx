@@ -14,7 +14,21 @@ import { settingsReducer } from "../state/setupSettings";
 import { strengthenActive, strengthenOffered } from "../state/strengthenChoice";
 import type { SettingsAction } from "../state/setupSettings";
 import type { SetupSettings } from "../types";
+import {
+  MAX_FILE_BYTES,
+  ProjectFormatError,
+  backupFileName,
+  cleanName,
+  packMatrix,
+  parseProjectJson,
+  projectToJson,
+  unpackMatrix,
+} from "../engine/project/format";
+import type { ProjectData } from "../engine/project/format";
+import { deleteProject, getProject, listProjects, renameProject, saveProject } from "../lib/projectStore";
+import type { ProjectSummary } from "../lib/projectStore";
 import { ChartView } from "./ChartView";
+import { ProjectsPanel } from "./ProjectsPanel";
 import { ConfirmDiscard } from "./ConfirmDiscard";
 import { CropPreview } from "./CropPreview";
 import { Icon } from "./Icon";
@@ -34,6 +48,8 @@ export function SetupScreen() {
     crop: CropState;
     aspect: number;
     blank: boolean;
+    /** A saved, hand-edited version of the chart (only when a project was opened). */
+    current?: StitchMatrix;
   } | null>(null);
   // How this chart is started: from a picture, or from a blank grid.
   const [start, setStart] = useState<"image" | "scratch">("image");
@@ -45,13 +61,228 @@ export function SetupScreen() {
   const [sinceDownload, setSinceDownload] = useState(false);
   // "Strengthen thin lines": ticked by the person; only has an effect on sizes where it is offered.
   const [strengthen, setStrengthen] = useState(false);
-  const guard = useDiscardGuard(edited);
+  // Projects save themselves on this device. "saved" means the chart on screen is safely stored, so nothing is at risk.
+  const [saveState, setSaveState] = useState<"none" | "unsaved" | "saving" | "saved" | "error">("none");
+  const [projects, setProjects] = useState<ProjectSummary[]>([]);
+  const [storageOk, setStorageOk] = useState(true);
+  const [projectMsg, setProjectMsg] = useState<string | null>(null);
+  const guard = useDiscardGuard(saveState === "saved" ? 0 : edited);
   // Once a chart is open the setup folds away into a one-line bar (on every screen size), so the chart gets the room.
   const [setupOpen, setSetupOpen] = useState(true);
   const barRef = useRef<HTMLDivElement>(null);
 
+  // ---- Saving ----
+  type Base = Omit<ProjectData, "current" | "updatedAt" | "progress" | "image">;
+  const projectRef = useRef<{ base: Base; imagePromise: Promise<ProjectData["image"]>; imageWritten: boolean } | null>(null);
+  const matrixRef = useRef<StitchMatrix | null>(null);
+  const savedMatrixRef = useRef<StitchMatrix | null>(null);
+  const progressRef = useRef(0);
+  const resultRef = useRef<typeof result>(null);
+  const versionRef = useRef(0);
+  const timerRef = useRef<number | undefined>(undefined);
+  const chainRef = useRef<Promise<void>>(Promise.resolve());
+
+  const refreshProjects = useCallback(() => {
+    listProjects()
+      .then((l) => {
+        setProjects(l);
+        setStorageOk(true);
+      })
+      .catch(() => setStorageOk(false));
+  }, []);
+  useEffect(() => refreshProjects(), [refreshProjects]);
+
+  const writeNow = useCallback(() => {
+    const p = projectRef.current;
+    const m = matrixRef.current;
+    if (!p || !m) return Promise.resolve();
+    const version = versionRef.current;
+    setSaveState("saving");
+    chainRef.current = chainRef.current.then(async () => {
+      try {
+        const withImage = !p.imageWritten;
+        const image = withImage ? await p.imagePromise : null;
+        await saveProject(
+          { ...p.base, current: packMatrix(m), updatedAt: Date.now(), progress: progressRef.current, image },
+          { withImage },
+        );
+        p.imageWritten = true;
+        if (projectRef.current === p) setSaveState(version === versionRef.current ? "saved" : "unsaved");
+        refreshProjects();
+      } catch {
+        if (projectRef.current === p) setSaveState("error");
+      }
+    });
+    return chainRef.current;
+  }, [refreshProjects]);
+
+  const scheduleSave = useCallback(() => {
+    if (!projectRef.current) return;
+    versionRef.current++;
+    setSaveState("unsaved");
+    window.clearTimeout(timerRef.current);
+    timerRef.current = window.setTimeout(() => void writeNow(), 1200);
+  }, [writeNow]);
+
+  // Leaving the page (or the app going to the background) saves right away instead of waiting.
+  useEffect(() => {
+    const flush = () => {
+      if (timerRef.current !== undefined) {
+        window.clearTimeout(timerRef.current);
+        timerRef.current = undefined;
+        void writeNow();
+      }
+    };
+    const onVis = () => document.visibilityState === "hidden" && flush();
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("pagehide", flush);
+    return () => {
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("pagehide", flush);
+    };
+  }, [writeNow]);
+
+  const beginProject = (res: NonNullable<typeof result>, f: File | null) => {
+    const now = Date.now();
+    const id = crypto.randomUUID();
+    projectRef.current = {
+      base: {
+        id,
+        name: res.blank ? "Blank canvas" : cleanName(f?.name.replace(/\.[^.]+$/, ""), "My picture"),
+        kind: res.blank ? "blank" : "picture",
+        createdAt: now,
+        settings,
+        strengthen,
+        crop: res.crop,
+        aspect: res.aspect,
+        converted: packMatrix(res.matrix),
+      },
+      imagePromise:
+        !res.blank && f
+          ? f.arrayBuffer().then((b) => ({ name: f.name, type: f.type, bytes: new Uint8Array(b) }))
+          : Promise.resolve(null),
+      imageWritten: false,
+    };
+    matrixRef.current = res.matrix;
+    savedMatrixRef.current = null;
+    progressRef.current = 0;
+    scheduleSave();
+  };
+
+  const onMatrixChange = useCallback(
+    (m: StitchMatrix, converted: StitchMatrix) => {
+      if (!projectRef.current || resultRef.current?.matrix !== converted) return;
+      if (m === savedMatrixRef.current) return;
+      savedMatrixRef.current = m;
+      matrixRef.current = m;
+      scheduleSave();
+    },
+    [scheduleSave],
+  );
+
+  const applyProject = (data: ProjectData) => {
+    requestId.current++;
+    window.clearTimeout(timerRef.current);
+    timerRef.current = undefined;
+    const conv = unpackMatrix(data.converted);
+    const cur = unpackMatrix(data.current);
+    const f = data.image ? new File([data.image.bytes.slice().buffer as ArrayBuffer], data.image.name, { type: data.image.type }) : null;
+    setProjectMsg(null);
+    setUploadError(null);
+    setRunError(null);
+    setStart(data.kind === "blank" ? "scratch" : "image");
+    dispatch({ key: "orientation", value: data.settings.orientation });
+    dispatch({ key: "sizeId", value: data.settings.sizeId });
+    dispatch({ key: "maxColors", value: data.settings.maxColors });
+    setStrengthen(data.strengthen);
+    setCrop(data.crop);
+    setFile(f);
+    const { image: _img, current: _cur, updatedAt: _u, progress: _p, ...base } = data;
+    void _img; void _cur; void _u; void _p;
+    projectRef.current = { base, imagePromise: Promise.resolve(data.image), imageWritten: true };
+    matrixRef.current = cur;
+    savedMatrixRef.current = cur;
+    progressRef.current = data.progress;
+    setSaveState("saved");
+    setStatus("done");
+    setResult({ matrix: conv, current: cur, crop: data.crop, aspect: data.aspect, blank: data.kind === "blank" });
+  };
+
+  const openSaved = (id: string) => {
+    guard.request("Opening a saved project", () => {
+      getProject(id)
+        .then((d) => (d ? applyProject(d) : setProjectMsg("That project couldn't be found.")))
+        .catch(() => setProjectMsg("That project couldn't be opened."));
+    });
+  };
+
+  const importBackup = (f: File) => {
+    setProjectMsg(null);
+    if (f.size > MAX_FILE_BYTES) {
+      setProjectMsg("That file is too large to be a GridCrow backup.");
+      return;
+    }
+    f.text()
+      .then((text) => {
+        const data = parseProjectJson(text, crypto.randomUUID());
+        guard.request("Opening a backup file", () => {
+          saveProject(data, { withImage: true })
+            .catch(() => setStorageOk(false)) // still opens; it just can't be kept on this device
+            .finally(() => {
+              applyProject(data);
+              refreshProjects();
+            });
+        });
+      })
+      .catch((e) =>
+        setProjectMsg(
+          e instanceof ProjectFormatError ? e.message : "That file couldn't be read as a GridCrow backup.",
+        ),
+      );
+  };
+
+  const exportBackup = async () => {
+    const p = projectRef.current;
+    const m = matrixRef.current;
+    if (!p || !m) return;
+    try {
+      const image = await p.imagePromise;
+      const json = projectToJson({ ...p.base, current: packMatrix(m), updatedAt: Date.now(), progress: progressRef.current, image });
+      const url = URL.createObjectURL(new Blob([json], { type: "application/json" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = backupFileName(p.base.name);
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 4000);
+    } catch {
+      setProjectMsg("The backup file couldn't be made.");
+    }
+  };
+
+  const renameSaved = (id: string, name: string) => {
+    const clean = cleanName(name);
+    if (projectRef.current?.base.id === id) projectRef.current.base.name = clean;
+    renameProject(id, clean).then(refreshProjects).catch(() => setProjectMsg("Couldn't rename that project."));
+  };
+
+  const deleteSaved = (id: string) => {
+    if (projectRef.current?.base.id === id) {
+      window.clearTimeout(timerRef.current);
+      timerRef.current = undefined;
+      projectRef.current = null;
+      setSaveState("none");
+    }
+    deleteProject(id).then(refreshProjects).catch(() => setProjectMsg("Couldn't delete that project."));
+  };
+
   // Anything the chart depends on changing makes an old result stale, so it is cleared.
   const invalidate = useCallback(() => {
+    window.clearTimeout(timerRef.current);
+    timerRef.current = undefined;
+    projectRef.current = null;
+    setSaveState("none");
     requestId.current++;
     setResult(null);
     setRunError(null);
@@ -136,8 +367,10 @@ export function SetupScreen() {
       }
       const matrix = await convertInBackground(raster, crop, grid);
       if (id !== requestId.current) return; // settings changed while working
-      setResult({ matrix, crop, aspect, blank: false });
+      const res = { matrix, crop, aspect, blank: false };
+      setResult(res);
       setStatus("done");
+      beginProject(res, file);
     } catch (e) {
       if (id !== requestId.current) return;
       setRunError(e instanceof ConversionError ? e.message : "Something went wrong while building your grid.");
@@ -150,7 +383,9 @@ export function SetupScreen() {
     requestId.current++;
     setRunError(null);
     setStatus("done");
-    setResult({ matrix: makeBlankMatrix(grid.cols, grid.rows), crop: DEFAULT_CROP, aspect, blank: true });
+    const res = { matrix: makeBlankMatrix(grid.cols, grid.rows), crop: DEFAULT_CROP, aspect, blank: true };
+    setResult(res);
+    beginProject(res, null);
   };
 
   const chooseStart = (next: "image" | "scratch") => {
@@ -164,6 +399,7 @@ export function SetupScreen() {
 
   // A new chart folds the setup away and brings the editor to the top of the screen; no chart, setup open.
   const hasResult = result !== null;
+  resultRef.current = result;
   // Show the setup bar and the editor under it; on a short screen (phone held sideways) the editor alone, since every pixel counts.
   const bringEditorIntoView = () => {
     const short = window.matchMedia("(max-height: 34rem)").matches;
@@ -188,6 +424,16 @@ export function SetupScreen() {
   return (
     <main>
       <div hidden={folded} className="setup__body">
+        <ProjectsPanel
+          projects={projects}
+          currentId={projectRef.current?.base.id ?? null}
+          onOpen={openSaved}
+          onRename={renameSaved}
+          onDelete={deleteSaved}
+          onImport={importBackup}
+          message={projectMsg}
+          storageOk={storageOk}
+        />
         <fieldset className="start">
           <legend>How do you want to begin?</legend>
           <div className="start__cards">
@@ -363,6 +609,12 @@ export function SetupScreen() {
           <span className="setupbar__text">
             {result.blank ? "Blank canvas" : "Your picture"} · {grid.widthInches} × {grid.heightInches} in
           </span>
+          <span className="setupbar__saved" data-testid="save-status" role="status">
+            {saveState === "saved" && "Saved on this device"}
+            {saveState === "saving" && "Saving…"}
+            {saveState === "unsaved" && "Saving…"}
+            {saveState === "error" && "Couldn't save here"}
+          </span>
           <button
             type="button"
             className="setupbar__btn"
@@ -383,6 +635,9 @@ export function SetupScreen() {
           aspect={result.aspect}
           blank={result.blank}
           startColor={result.blank ? BLANK_START_COLOR : 0}
+          initialMatrix={result.current}
+          onMatrixChange={onMatrixChange}
+          onBackup={saveState === "none" ? undefined : exportBackup}
           onEditedChange={(n, afterDownload) => {
             setEdited(n);
             setSinceDownload(afterDownload);

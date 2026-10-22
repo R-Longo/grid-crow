@@ -60,9 +60,10 @@ export class EditorSession {
   private gesture: GestureState = initialGesture;
   private stroke: Stroke | null = null;
 
-  constructor(converted: StitchMatrix) {
+  /** `current` restores a saved, hand-edited chart (it starts a new undo history from there). */
+  constructor(converted: StitchMatrix, current?: StitchMatrix) {
     this.converted = converted;
-    this.matrix = converted;
+    this.matrix = current ?? converted;
   }
 
   setActive(index: number): void {

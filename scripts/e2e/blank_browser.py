@@ -4,6 +4,13 @@ Needs the dev server (npx vite --port 5173 --host 127.0.0.1); reads the real PNG
 import os, re, subprocess, sys, time
 from playwright.sync_api import sync_playwright
 
+# These tests are about the "you'll lose edits" warnings, which only matter when a project can't be saved on the device.
+from playwright.sync_api import Browser as _B
+_orig_nc = _B.new_context
+def _nc(self, *a, **k):
+    c = _orig_nc(self, *a, **k); c.add_init_script("Object.defineProperty(window,'indexedDB',{value:undefined})"); return c
+_B.new_context = _nc
+
 URL = "http://127.0.0.1:5173/"
 OUT = "/tmp/claude-0/scratch/blank_out/"; os.makedirs(OUT, exist_ok=True)
 IMG = "/tmp/claude-0/scratch/imgs/hand_line.png"
@@ -99,9 +106,9 @@ def scenario(page, tag, cdp=None):
     cards = page.locator(".start__card")
     check(f"{tag}: two clearly named starting choices", cards.count() == 2 and "Convert an Image" in cards.nth(0).inner_text() and "Draw from Scratch" in cards.nth(1).inner_text())
     check(f"{tag}: both cards are at least 44px tall", all(cards.nth(i).bounding_box()["height"] >= 44 for i in range(2)))
-    check(f"{tag}: the picture workflow is the unchanged default (upload area, colors, Create button)", page.locator("input[type=file]").count() == 1 and page.get_by_role("button", name=re.compile("Create My Crochet Grid")).count() == 1 and page.get_by_text("Maximum yarn colors").count() == 1)
+    check(f"{tag}: the picture workflow is the unchanged default (upload area, colors, Create button)", page.locator("input[type=file]:not([data-testid=import-backup])").count() == 1 and page.get_by_role("button", name=re.compile("Create My Crochet Grid")).count() == 1 and page.get_by_text("Maximum yarn colors").count() == 1)
     cards.nth(1).click(); time.sleep(0.3)
-    check(f"{tag}: Start from Scratch hides upload and color limit, keeps orientation and size", page.locator("input[type=file]").count() == 0 and page.get_by_text("Maximum yarn colors").count() == 0 and page.get_by_text("Finished tapestry size").count() == 1 and page.get_by_text("Orientation").count() >= 1)
+    check(f"{tag}: Start from Scratch hides upload and color limit, keeps orientation and size", page.locator("input[type=file]:not([data-testid=import-backup])").count() == 0 and page.get_by_text("Maximum yarn colors").count() == 0 and page.get_by_text("Finished tapestry size").count() == 1 and page.get_by_text("Orientation").count() >= 1)
     check(f"{tag}: the Open Blank Canvas button is there", page.locator("[data-testid=open-blank]").is_visible())
 
     # --- a blank 12x16 portrait: 48 x 72
@@ -214,7 +221,7 @@ def scenario(page, tag, cdp=None):
     page.locator(".start__card").nth(1).click(); radio(page, "portrait"); radio(page, "24x32"); open_blank(page)
     check(f"{tag}: 24 x 32 portrait is 96 x 144", grid_dims(page) == (96, 144, 10), str(grid_dims(page)))
     # --- the picture workflow still works unchanged
-    page.goto(URL); page.wait_for_load_state("networkidle"); page.set_input_files("input[type=file]", IMG); time.sleep(0.8)
+    page.goto(URL); page.wait_for_load_state("networkidle"); page.set_input_files("input[type=file]:not([data-testid=import-backup])", IMG); time.sleep(0.8)
     radio(page, "12x16"); (unfold(page), page.get_by_role("button", name=re.compile("Create My Crochet Grid"))).__getitem__(1).click()
     page.wait_for_selector("[data-testid=chart-canvas]", state="visible", timeout=90000); time.sleep(0.6)
     if touch: opts(page).click(); time.sleep(0.3)  # on a phone the Original / Chart switch is in the Options panel

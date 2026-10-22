@@ -225,3 +225,11 @@ Once a chart opens, the editor is a workspace the height of the screen (under th
 - Already in place and now tested: safe-area insets on the page and the editor workspace, `svh` workspace height (no resize wobble as a phone address bar hides), measured chart fitting via ResizeObserver.
 - Test: `scripts/e2e/resize_browser.py` (10 odd window sizes up to 4K and down to 360x640 / 700x320, rotation sequences, zoomed-in then resized, a storm of 25 random resizes, resize in the middle of a brush stroke, no console errors).
 - Service worker cache v28.
+
+## 19. Saving projects (Phase 4a)
+
+- Projects autosave to IndexedDB (`src/lib/projectStore.ts`): the project record and its picture are stored separately so frequent edits never rewrite the image. No account, nothing uploaded.
+- File format `.gridcrow` (JSON, `src/engine/project/format.ts`, version 1): strictly validated on import; bad files show a plain message.
+- Autosave runs 1.2 s after a change and immediately when the page is hidden. While a project is "Saved on this device" the discard-edits warnings stay quiet; if storage fails they return.
+- Undo history is not saved. `progress` (stitches crocheted, working order) is stored now for the tracker.
+- Tests: `format.test.ts`, `save_project_browser.py`. Tests about the discard warnings run with IndexedDB disabled.

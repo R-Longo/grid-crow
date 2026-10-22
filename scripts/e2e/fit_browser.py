@@ -2,6 +2,13 @@
 import json, re, sys, time
 from playwright.sync_api import sync_playwright
 
+# These tests are about the "you'll lose edits" warnings, which only matter when a project can't be saved on the device.
+from playwright.sync_api import Browser as _B
+_orig_nc = _B.new_context
+def _nc(self, *a, **k):
+    c = _orig_nc(self, *a, **k); c.add_init_script("Object.defineProperty(window,'indexedDB',{value:undefined})"); return c
+_B.new_context = _nc
+
 URL = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:5173/"
 IMG = "/tmp/claude-0/scratch/hyb/sun-card-34.png"
 ASPECT = 4.5 / 4
@@ -48,7 +55,7 @@ def fit_btn(page): return page.get_by_role("button", name="Fit to Screen")
 
 def make_chart(page, size, orientation):
     page.goto(URL); page.wait_for_load_state("networkidle")
-    page.set_input_files("input[type=file]", IMG)
+    page.set_input_files("input[type=file]:not([data-testid=import-backup])", IMG)
     for value in (orientation, size):  # the page re-renders while the picture opens, so retry a radio that did not take
         for attempt in range(4):
             try:

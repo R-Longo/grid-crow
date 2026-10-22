@@ -3,6 +3,13 @@ Run with the dev server up (npx vite --port 5173 --host 127.0.0.1). Chromium onl
   python3 stage5c_browser.py [desktop|mobile]"""
 import os, re, sys, time
 from playwright.sync_api import sync_playwright
+
+# These tests are about the "you'll lose edits" warnings, which only matter when a project can't be saved on the device.
+from playwright.sync_api import Browser as _B
+_orig_nc = _B.new_context
+def _nc(self, *a, **k):
+    c = _orig_nc(self, *a, **k); c.add_init_script("Object.defineProperty(window,'indexedDB',{value:undefined})"); return c
+_B.new_context = _nc
 import stage5_browser as s5
 
 URL = s5.URL

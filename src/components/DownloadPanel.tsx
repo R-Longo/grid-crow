@@ -25,6 +25,8 @@ interface DownloadPanelProps {
   tiledPages: number;
   /** Pages Compact makes for this chart (overview + chart pages). */
   compactPages: number;
+  /** Saves the whole project (chart, settings, progress, picture) as a `.gridcrow` backup file. */
+  onBackup?: () => void;
 }
 
 /**
@@ -32,7 +34,7 @@ interface DownloadPanelProps {
  * The PDF is the flexible one, to read on screen or print. Only when "Large print" is chosen does the printing help appear.
  * Shown in the sidebar on wide screens and in the "Download" panel on phones.
  */
-export function DownloadPanel({ onPng, onPdf, busy, note, choices, onChoices, tiledPages, compactPages }: DownloadPanelProps) {
+export function DownloadPanel({ onPng, onPdf, busy, note, choices, onChoices, tiledPages, compactPages, onBackup }: DownloadPanelProps) {
   const uid = useId();
   const tiled = choices.pdfLayout === "tiled";
   const compact = choices.pdfLayout === "compact";
@@ -85,6 +87,16 @@ export function DownloadPanel({ onPng, onPdf, busy, note, choices, onChoices, ti
           {busy === "pdf" ? "Making your PDF…" : "Download PDF"}
         </button>
       </fieldset>
+
+      {onBackup && (
+        <div className="download__backup">
+          <p className="download__text">Your project saves on this device by itself. A backup file lets you move it to another device or keep a safe copy.</p>
+          <button type="button" className="chart__small download__btn" data-testid="download-backup" onClick={onBackup}>
+            <Icon name="download" size={18} />
+            Save backup file (.gridcrow)
+          </button>
+        </div>
+      )}
 
       <p
         className={`download__note${note?.kind === "error" ? " download__note--error" : ""}`}

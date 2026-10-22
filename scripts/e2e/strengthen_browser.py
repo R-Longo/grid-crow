@@ -4,6 +4,13 @@ and three test pictures in IMGDIR: hand_line.png (line art), skeleton_lady.png (
 import re, sys, time
 from playwright.sync_api import sync_playwright
 
+# These tests are about the "you'll lose edits" warnings, which only matter when a project can't be saved on the device.
+from playwright.sync_api import Browser as _B
+_orig_nc = _B.new_context
+def _nc(self, *a, **k):
+    c = _orig_nc(self, *a, **k); c.add_init_script("Object.defineProperty(window,'indexedDB',{value:undefined})"); return c
+_B.new_context = _nc
+
 URL = "http://127.0.0.1:5173/"
 IMGDIR = "/tmp/claude-0/scratch/imgs/"
 results = []
@@ -27,7 +34,7 @@ def dark_share(page):
     return page.evaluate("""() => { const cv=document.querySelector('[data-testid=chart-canvas]'); const d=cv.getContext('2d').getImageData(0,0,cv.width,cv.height).data;
       let n=0,t=0; for(let i=0;i<d.length;i+=16){ t++; if(0.299*d[i]+0.587*d[i+1]+0.114*d[i+2]<100) n++; } return n/t; }""")
 def load(page, name):
-    page.goto(URL); page.wait_for_load_state("networkidle"); page.set_input_files("input[type=file]", IMGDIR + name); time.sleep(1.0)
+    page.goto(URL); page.wait_for_load_state("networkidle"); page.set_input_files("input[type=file]:not([data-testid=import-backup])", IMGDIR + name); time.sleep(1.0)
 def box(page): return page.locator("[data-testid=strengthen]")
 
 def scenario(page, tag):

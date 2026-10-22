@@ -21,7 +21,7 @@ def bresenham(a, b):
 
 def setup(page):
     page.goto(URL); page.wait_for_load_state("networkidle")
-    page.set_input_files("input[type=file]", IMG)
+    page.set_input_files("input[type=file]:not([data-testid=import-backup])", IMG)
     for value in ("24x32", "10"):  # the page re-renders while the picture opens, so retry a radio that did not take
         for attempt in range(4):
             try:
