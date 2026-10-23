@@ -240,3 +240,10 @@ Once a chart opens, the editor is a workspace the height of the screen (under th
 - Progress is one number (stitches crocheted, working order: row 1 at the bottom, stitch 1 on the right, odd rows right to left). Logic and tests: `src/engine/track/progress.ts`.
 - Crocheted stitches are veiled, the row being worked is outlined in gold, the next stitch is boxed. Buttons: Next stitch, Back, Finish row, Start over. Tapping the last marked stitch again takes it back.
 - Progress autosaves with the project and is included in the `.gridcrow` backup. Test: `scripts/e2e/tracker_browser.py`.
+
+## 21. Yarn estimate (Phase 4c)
+
+- `src/engine/yarn/estimate.ts`: a ROUGH range per color (low to high) from stitch counts. Assumes 8 to 12 times a stitch's width in yarn per single crochet (2 to 3 in at 4 stitches/inch; a rule of thumb scaled from a published double-crochet swatch example, not a measured single-crochet value), plus yarn carried inside stitches (one stitch width per carried stitch, between a color's first and last use in each row) and 15% extra for tails.
+- Shown on screen (sidebar "Yarn estimate (rough)", phone Options) with an editable "Yards in one skein" (remembered on this device) and skeins rounded up from the high number.
+- Printed in the PNG key (per color and in all) and every PDF key (fit, large print, compact), with a note that it is an estimate. The PNG pixel budget went from 12.0M to 12.5M so the biggest chart keeps its 27 px stitches.
+- Tests: `estimate.test.ts`, `scripts/e2e/yarn_browser.py`.

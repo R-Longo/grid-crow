@@ -32,6 +32,7 @@ import { ConfirmReset } from "./ConfirmReset";
 import { BLANK_BACKGROUND_SLOT } from "../engine/blank";
 import type { AddColorResult, RecolorResult } from "../engine/editor/recolor";
 import { DownloadPanel } from "./DownloadPanel";
+import { YarnEstimate } from "./YarnEstimate";
 import type { DownloadChoices, DownloadNote } from "./DownloadPanel";
 import { buildPatternModel, patternFileName } from "../engine/export/pattern";
 import { downloadBlob, renderPatternPng } from "../lib/exportPng";
@@ -1197,6 +1198,9 @@ export function ChartView({
               <p className="chart__summary">{summary}</p>
               {viewToggle && <div className="chart__options-row">{viewToggle}</div>}
               {colorEditor && <div className="chart__options-row">{colorEditor}</div>}
+              <div className="chart__options-row">
+                <YarnEstimate matrix={matrix} />
+              </div>
               <div className="chart__options-row">{gridCheck}</div>
               <div className="chart__options-row chart__zoombar chart__zoom">{zoomControls}</div>
               <div className="chart__edit chart__options-row">{utility}</div>
@@ -1269,6 +1273,7 @@ export function ChartView({
             </h3>
             {palette}
             {colorEditor}
+            <YarnEstimate matrix={matrix} />
           </div>
           <div className="chart__downloads">
             <h3 className="chart__heading" id={downloadId}>

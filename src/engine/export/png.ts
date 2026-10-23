@@ -1,4 +1,4 @@
-import { STITCH_ASPECT, finishedLine, formatCount, gaugeLine, inkOn, labelNumbers, sizeLine, NUMBERING_NOTE, stitchNumbers } from "./pattern";
+import { STITCH_ASPECT, finishedLine, formatCount, gaugeLine, inkOn, labelNumbers, sizeLine, NUMBERING_NOTE, stitchNumbers, yardsText, yarnNote } from "./pattern";
 import type { PatternModel } from "./pattern";
 
 /** The small part of the canvas drawing API the exporters use, so they can be tested without a browser. */
@@ -46,6 +46,8 @@ export interface LegendEntry {
   letterText: TextItem;
   hexText: TextItem;
   countText: TextItem;
+  /** "about 40–60 yd": a rough estimate. */
+  yardsText: TextItem;
 }
 
 export interface PngLayout {
@@ -67,6 +69,9 @@ export interface PngLayout {
   legendTitle: TextItem;
   legend: LegendEntry[];
   total: TextItem;
+  /** The estimated yarn for the whole chart, and the lines that say what the estimate is. */
+  yarnTotal: TextItem;
+  yarnNote: TextItem[];
 }
 
 /** Break text into lines of about `maxChars` characters, at spaces. */
@@ -94,7 +99,7 @@ function build(model: PatternModel, cellW: number, letters: boolean): PngLayout 
   const letterSize = Math.round(cellH * 0.55);
   const gutterX = Math.round(numberSize * 2.7);
   const gutterY = Math.round(numberSize * 2.2);
-  const M = Math.round(56 * s);
+  const M = Math.round(48 * s);
   const chartW = model.cols * cellW;
   const chartH = model.rows * cellH;
   const width = Math.max(chartW + 2 * gutterX + 2 * M, Math.round(1300 * s));
@@ -123,10 +128,10 @@ function build(model: PatternModel, cellW: number, letters: boolean): PngLayout 
   const legendSize = Math.round(28 * s);
   const rowH = Math.round(52 * s);
   const swatch = Math.round(rowH * 0.7);
-  const legendCols = width - 2 * M >= Math.round(1500 * s) ? 2 : 1;
+  const legendCols = width - 2 * M >= Math.round(2000 * s) ? 2 : 1;
   const colW = Math.floor((width - 2 * M) / legendCols);
   const legendTop = chartBottom + gutterY + Math.round(36 * s);
-  const legendTitle: TextItem = { text: "Yarn colors and stitch counts", x: M, y: legendTop + legendSize * 0.6, size: Math.round(legendSize * 1.15), bold: true, serif: true, color: INK, align: "left" };
+  const legendTitle: TextItem = { text: "Yarn colors, stitch counts and rough yarn amounts", x: M, y: legendTop + legendSize * 0.6, size: Math.round(legendSize * 1.15), bold: true, serif: true, color: INK, align: "left" };
   const entriesTop = legendTop + Math.round(legendSize * 1.9);
   const perCol = Math.ceil(model.colors.length / legendCols);
   const legend: LegendEntry[] = model.colors.map((c, i) => {
@@ -144,6 +149,7 @@ function build(model: PatternModel, cellW: number, letters: boolean): PngLayout 
       letterText: { text: c.letter, x: letterX, y: cy, size: legendSize, bold: true, color: INK, align: "left" },
       hexText: { text: c.hex, x: letterX + Math.round(legendSize * 1.9), y: cy, size: legendSize, color: INK, align: "left" },
       countText: { text: `${formatCount(c.count)} ${c.count === 1 ? "stitch" : "stitches"}`, x: letterX + Math.round(legendSize * 16.5), y: cy, size: legendSize, color: INK, align: "right" },
+      yardsText: { text: `about ${yardsText(c.lowYards, c.highYards)}`, x: letterX + Math.round(legendSize * 28.5), y: cy, size: legendSize, color: INK, align: "right" },
     };
   });
   const legendBottom = entriesTop + perCol * rowH;
@@ -156,9 +162,26 @@ function build(model: PatternModel, cellW: number, letters: boolean): PngLayout 
     color: INK,
     align: "left",
   };
-  const height = Math.round(total.y + legendSize * 0.5 + M);
+  const yarnTotal: TextItem = {
+    text: `Rough yarn estimate: about ${yardsText(model.lowYards, model.highYards)} in all`,
+    x: M,
+    y: total.y + Math.round(legendSize * 1.5),
+    size: legendSize,
+    bold: true,
+    color: INK,
+    align: "left",
+  };
+  const noteSize = Math.round(24 * s);
+  const noteChars = Math.floor((width - 2 * M) / (noteSize * 0.6));
+  let ny = yarnTotal.y + Math.round(legendSize * 1.3);
+  const yarnNoteItems: TextItem[] = wrapText(yarnNote(model), noteChars).map((t) => {
+    const item: TextItem = { text: t, x: M, y: ny, size: noteSize, color: MUTED, align: "left" };
+    ny += Math.round(noteSize * 1.5);
+    return item;
+  });
+  const height = Math.round(ny + M * 0.5);
 
-  return { width, height, cellW, cellH, x0, y0, chartW, chartH, labelStep, showLetters, numberSize, letterSize, header, legendTitle, legend, total };
+  return { width, height, cellW, cellH, x0, y0, chartW, chartH, labelStep, showLetters, numberSize, letterSize, header, legendTitle, legend, total, yarnTotal, yarnNote: yarnNoteItems };
 }
 
 /** Work out the image: the largest stitch size whose picture stays within the pixel budget. */
@@ -277,8 +300,11 @@ export function drawPng(ctx: Ctx2D, model: PatternModel, l: PngLayout): void {
     text(ctx, e.letterText);
     text(ctx, e.hexText);
     text(ctx, e.countText);
+    text(ctx, e.yardsText);
   }
   text(ctx, l.total);
+  text(ctx, l.yarnTotal);
+  l.yarnNote.forEach((t) => text(ctx, t));
 }
 
 /** The numbers printed for a stitch, exported so tests can tie a drawn label back to its stitch. */

@@ -2,6 +2,7 @@ import { ROWS_PER_INCH, STANDARD_GAUGE, STITCHES_PER_INCH } from "../../config/g
 import type { StitchMatrix } from "../convert/types";
 import { stitchLabel } from "../editor/coords";
 import { colorCounts } from "../editor/paint";
+import { EXTRA, estimateYarn } from "../yarn/estimate";
 
 /**
  * Everything an exported pattern says, worked out from the stitch matrix and nothing else. The PNG and PDF exports are
@@ -23,6 +24,9 @@ export interface PatternColor {
   hex: string;
   /** Exact number of stitches of this color in the chart as it is now. */
   count: number;
+  /** Rough yarn estimate for this color, in whole yards (see engine/yarn/estimate.ts): the low and the high end. */
+  lowYards: number;
+  highYards: number;
 }
 
 export interface PatternModel {
@@ -39,6 +43,11 @@ export interface PatternModel {
   total: number;
   widthInches: number;
   heightInches: number;
+  /** Rough yarn estimate for the whole chart, in whole yards. */
+  lowYards: number;
+  highYards: number;
+  /** Inches of yarn per stitch at the low and high end of the estimate. */
+  inchesPerStitch: [number, number];
 }
 
 const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -53,11 +62,14 @@ export function buildPatternModel(matrix: StitchMatrix): PatternModel {
   const counts = colorCounts(matrix);
   const letterOf: Array<string | null> = [];
   const colors: PatternColor[] = [];
+  const yarn = estimateYarn(matrix);
+  const yarnOf = new Map(yarn.colors.map((c) => [c.slot, c]));
   matrix.palette.forEach((p, index) => {
     if (counts[index] > 0) {
       const letter = letterFor(colors.length);
       letterOf.push(letter);
-      colors.push({ index, letter, hex: p.hex.toUpperCase(), count: counts[index] });
+      const y = yarnOf.get(index);
+      colors.push({ index, letter, hex: p.hex.toUpperCase(), count: counts[index], lowYards: y?.lowYards ?? 0, highYards: y?.highYards ?? 0 });
     } else {
       letterOf.push(null);
     }
@@ -72,7 +84,21 @@ export function buildPatternModel(matrix: StitchMatrix): PatternModel {
     total: matrix.cols * matrix.rows,
     widthInches: matrix.cols / STITCHES_PER_INCH,
     heightInches: matrix.rows / ROWS_PER_INCH,
+    lowYards: yarn.lowYards,
+    highYards: yarn.highYards,
+    inchesPerStitch: [yarn.inchesPerStitchLow, yarn.inchesPerStitchHigh],
   };
+}
+
+/** "40–60 yd" (a range, because this is an estimate), or "40 yd" when both ends agree. */
+export function yardsText(low: number, high: number): string {
+  return low === high ? `${formatCount(low)} yd` : `${formatCount(low)}–${formatCount(high)} yd`;
+}
+
+/** The wording printed under every color key. Plain about what the numbers are and are not. */
+export function yarnNote(m: PatternModel): string {
+  const [a, b] = m.inchesPerStitch.map((n) => String(Number(n.toFixed(1))));
+  return `Rough estimate, not a measurement: about ${a} to ${b} inches of yarn per stitch, plus carried yarn and ${Math.round(EXTRA * 100)}% extra. Yarn, hook and tension vary, so buy a bit more than the high number.`;
 }
 
 /** The number printed for column `col` (0-based, from the left; stitch 1 is the rightmost column) and for matrix row `row` (0 = top): row 1 is the bottom. */

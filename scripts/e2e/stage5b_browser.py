@@ -32,7 +32,6 @@ def verify_fit(tag, path, after, pal):
     check(f"{tag}: the text has the size, finished size and exact reference gauge", "96 stitches × 144 rows" in t and "24 × 32 inches" in t and "16 stitches × 18 rows per 4 inches, using worsted-weight #4 yarn and a 5 mm hook" in re.sub(r"\s+", " ", t), "")
     counts = [int(x.replace(",", "")) for x in re.findall(r"([\d,]+) stitches", t) if x.replace(",", "").isdigit()]
     want = [n for _, n in used]
-    got = [int(m.replace(",", "")) for m in re.findall(r"([\d,]+) stitch(?:es)?\n|([\d,]+) stitch(?:es)?\s", t) for m in m if m]
     hexes = re.findall(r"#([0-9A-F]{6})", t)
     check(f"{tag}: the key lists every yarn color with its hex and letter", hexes[: len(used)] == [h for h, _ in used] or sorted(hexes[: len(used)]) == sorted(h for h, _ in used), str(hexes[:len(used)]))
     flat = re.sub(r"\s+", " ", t)
