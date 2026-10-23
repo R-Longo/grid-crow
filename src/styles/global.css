@@ -2121,6 +2121,13 @@ legend {
     max-width: none;
   }
 }
+/* With the editor open the panel is wide, but the setup form keeps the same width it has before a chart exists. */
+@media (min-width: 56.25rem) {
+  .panel:has(.chart) .setup__body {
+    max-width: 36.25rem;
+    margin-inline: auto;
+  }
+}
 
 .brand__logo {
   max-width: 26rem;
