@@ -1,3 +1,4 @@
+import { Footer } from "./components/Footer";
 import { Header } from "./components/Header";
 import { SetupScreen } from "./components/SetupScreen";
 
@@ -7,6 +8,7 @@ export default function App() {
       <div className="panel">
         <Header />
         <SetupScreen />
+        <Footer />
       </div>
     </div>
   );

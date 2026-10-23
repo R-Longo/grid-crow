@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { ProjectSummary } from "../lib/projectStore";
 import { MAX_PROJECT_NAME } from "../engine/project/format";
+import { ProjectThumb } from "./ProjectThumb";
 
 interface Props {
   projects: ProjectSummary[];
@@ -64,6 +65,11 @@ export function ProjectsPanel({ projects, currentId, onOpen, onRename, onDelete,
         </p>
       )}
       {open && (
+        <p className="projects__meta" data-testid="projects-safety">
+          Projects live in this browser. Browsers can clear saved data when a device runs low on space, so save a backup file (.gridcrow) of anything you would hate to lose.
+        </p>
+      )}
+      {open && (
         <ul className="projects__list" data-testid="projects-list">
           {projects.map((p) => (
             <li key={p.id} className="projects__item" data-testid="project-item">
@@ -89,6 +95,7 @@ export function ProjectsPanel({ projects, currentId, onOpen, onRename, onDelete,
                 </form>
               ) : (
                 <>
+                  <ProjectThumb chart={p.thumb} />
                   <div className="projects__info">
                     <span className="projects__name">
                       {p.name}

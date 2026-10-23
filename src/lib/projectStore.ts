@@ -18,6 +18,8 @@ export interface ProjectSummary {
   rows: number;
   progress: number;
   colors: number;
+  /** The chart as it is now, for the little picture in the list. */
+  thumb: PackedMatrix;
 }
 
 type Stored = Omit<ProjectData, "image"> & { hasImage: boolean };
@@ -64,7 +66,17 @@ function done(tx: IDBTransaction): Promise<void> {
 }
 
 function summary(p: Stored): ProjectSummary {
-  return { id: p.id, name: p.name, kind: p.kind, updatedAt: p.updatedAt, cols: p.current.cols, rows: p.current.rows, progress: p.progress, colors: p.current.palette.length };
+  return { id: p.id, name: p.name, kind: p.kind, updatedAt: p.updatedAt, cols: p.current.cols, rows: p.current.rows, progress: p.progress, colors: p.current.palette.length, thumb: p.current };
+}
+
+/** Asks the browser to keep saved projects when the device runs low on space. A browser may say no; the backup file is the real safety net. */
+export async function requestKeepStorage(): Promise<boolean> {
+  try {
+    if (navigator.storage?.persisted && (await navigator.storage.persisted())) return true;
+    return (await navigator.storage?.persist?.()) ?? false;
+  } catch {
+    return false;
+  }
 }
 
 export async function listProjects(): Promise<ProjectSummary[]> {

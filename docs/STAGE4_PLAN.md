@@ -247,3 +247,9 @@ Once a chart opens, the editor is a workspace the height of the screen (under th
 - Shown on screen (sidebar "Yarn estimate (rough)", phone Options) with an editable "Yards in one skein" (remembered on this device) and skeins rounded up from the high number.
 - Printed in the PNG key (per color and in all) and every PDF key (fit, large print, compact), with a note that it is an estimate. The PNG pixel budget went from 12.0M to 12.5M so the biggest chart keeps its 27 px stitches.
 - Tests: `estimate.test.ts`, `scripts/e2e/yarn_browser.py`.
+
+## 22. Thumbnails, keep-storage request, footer (Phase 4d)
+
+- My projects shows a small picture of each chart (`ProjectThumb`, one pixel per stitch, drawn from the stored current chart).
+- After a successful save the app asks the browser to keep its saved data (`navigator.storage.persist`). Browsers may refuse, so the list says plainly to save a backup file of anything important.
+- Footer: "Your pictures and projects stay on your device." plus a "Share feedback" link. The link shows only when `FEEDBACK_URL` in `src/config/links.ts` is set (paste the Discord invite there).

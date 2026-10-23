@@ -2438,3 +2438,9 @@ body {
 .yarn__yd { text-align: right; }
 .yarn__sk { min-width: 4.5rem; text-align: right; opacity: 0.8; }
 .yarn__note { font-size: 0.8125rem; opacity: 0.8; margin: 0.5rem 0 0; }
+
+/* ---- Project thumbnails and footer ---- */
+.projects__thumb { width: 3.5rem; flex: none; image-rendering: pixelated; border: 1px solid var(--border-strong); border-radius: 2px; background: #fff; }
+.projects__item { align-items: center; }
+.footer { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; justify-content: center; margin-top: var(--space-4); padding-top: var(--space-3); border-top: 1px solid var(--border); font-size: 0.8125rem; color: var(--text-muted); text-align: center; }
+.footer a { color: #e8b84f; font-weight: 600; }

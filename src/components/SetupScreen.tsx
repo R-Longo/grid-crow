@@ -25,7 +25,7 @@ import {
   unpackMatrix,
 } from "../engine/project/format";
 import type { ProjectData } from "../engine/project/format";
-import { deleteProject, getProject, listProjects, renameProject, saveProject } from "../lib/projectStore";
+import { deleteProject, getProject, listProjects, renameProject, requestKeepStorage, saveProject } from "../lib/projectStore";
 import type { ProjectSummary } from "../lib/projectStore";
 import { ChartView } from "./ChartView";
 import { ProjectsPanel } from "./ProjectsPanel";
@@ -117,6 +117,7 @@ export function SetupScreen() {
           { withImage },
         );
         p.imageWritten = true;
+        void requestKeepStorage();
         if (projectRef.current === p) setSaveState(version === versionRef.current ? "saved" : "unsaved");
         refreshProjects();
       } catch {
