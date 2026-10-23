@@ -43,12 +43,12 @@ const STEPS: { icon: IconName; title: string; body: string; showSizes?: boolean 
   {
     icon: "check",
     title: "Crochet it and track your progress",
-    body: "Switch from Edit to Track and crochet along on screen. Tap Next stitch, or tap a stitch on the chart to mark everything up to it. The finished stitches darken, the row you're working is outlined, and a counter shows your row and stitch. Tap the last marked stitch again to take it back.",
+    body: "Switch from Edit to Track and crochet along on screen. Tap Next stitch, or tap a stitch on the chart to mark your progress.",
   },
   {
     icon: "options",
     title: "Pick up where you left off",
-    body: "Your project saves on this device as you go, including your progress. Reopen it any time from My projects on the setup screen. To move it to another device, save a backup file (.gridcrow) from the Download area and open it there.",
+    body: "Your project saves on this device, reopen it anytime from My Projects on the setup screen.",
   },
 ];
 
