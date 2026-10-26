@@ -44,5 +44,5 @@ export function floodFill(
     }
     cells[r][i - r * cols] = color;
   }
-  return { matrix: { cols, rows, palette: m.palette, cells }, changed: region };
+  return { matrix: { ...m, cells }, changed: region };
 }

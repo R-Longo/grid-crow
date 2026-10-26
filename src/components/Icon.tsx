@@ -15,6 +15,7 @@ export type IconName =
   | "dropper"
   | "hand"
   | "text"
+  | "ruler"
   | "undo"
   | "redo"
   | "reset"
@@ -77,6 +78,12 @@ const PATHS: Record<string, ReactNode> = {
   dropper: (
     <>
       <path d="M14 6l4 4M16 4l4 4-2 2-4-4 2-2zM13 7l-8 8-1 4 4-1 8-8" />
+    </>
+  ),
+  ruler: (
+    <>
+      <path d="M3.500 16.500l13-13 4 4-13 13z" />
+      <path d="M7 13l2 2M10 10l2 2M13 7l2 2" />
     </>
   ),
   text: (

@@ -10,6 +10,8 @@ import type { MaxColors, Orientation } from "../types";
 const EXPECTED: [FinishedSizeId, [number, number], [number, number], [number, number], [number, number]][] = [
   ["6x8", [6, 8], [8, 6], [24, 36], [32, 27]],
   ["8x10", [8, 10], [10, 8], [32, 45], [40, 36]],
+  ["9x16", [9, 16], [16, 9], [36, 72], [64, 41]],
+  ["12x12", [12, 12], [12, 12], [48, 54], [48, 54]],
   ["12x16", [12, 16], [16, 12], [48, 72], [64, 54]],
   ["16x20", [16, 20], [20, 16], [64, 90], [80, 72]],
   ["18x24", [18, 24], [24, 18], [72, 108], [96, 81]],
@@ -31,7 +33,7 @@ describe("reference gauge", () => {
 });
 
 describe("size presets", () => {
-  it("are exactly the six approved sizes", () => {
+  it("are exactly the eight approved sizes", () => {
     expect(FINISHED_SIZES.map((s) => s.id)).toEqual(EXPECTED.map((e) => e[0]));
   });
 });
@@ -64,8 +66,10 @@ describe.each(EXPECTED)("size %s", (id, portraitIn, landscapeIn, portraitGrid, l
       expect(Number.isInteger(s.cols)).toBe(true);
       expect(Number.isInteger(s.rows)).toBe(true);
       // the product is already whole, so round() is not hiding a fractional stitch
+      // (one exception: 9 inches at 4.5 rows an inch is 40.5 rows, so 9 x 16 landscape rounds up by half a row)
       expect(s.widthInches * STITCHES_PER_INCH).toBe(s.cols);
-      expect(s.heightInches * ROWS_PER_INCH).toBe(s.rows);
+      if (id === "9x16" && o === "landscape") expect(s.heightInches * ROWS_PER_INCH).toBe(s.rows - 0.5);
+      else expect(s.heightInches * ROWS_PER_INCH).toBe(s.rows);
     }
   });
 

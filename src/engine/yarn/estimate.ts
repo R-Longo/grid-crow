@@ -1,5 +1,5 @@
 import type { StitchMatrix } from "../convert/types";
-import { STITCHES_PER_INCH } from "../../config/gauge";
+import { gaugeOf } from "../gauge";
 
 /**
  * A ROUGH estimate of the yarn each color needs, worked out from the chart and the gauge. It is a planning aid for deciding
@@ -57,7 +57,7 @@ export function countStitchesAndCarry(m: StitchMatrix): { stitches: number[]; ca
 }
 
 export function estimateYarn(m: StitchMatrix): YarnEstimate {
-  const width = 1 / STITCHES_PER_INCH; // inches
+  const width = 1 / gaugeOf(m).stitchesPerInch; // inches
   const { stitches, carried } = countStitchesAndCarry(m);
   const yards = (n: number, carry: number, factor: number) =>
     Math.ceil(((n * width * factor + carry * width) * (1 + EXTRA)) / INCHES_PER_YARD);

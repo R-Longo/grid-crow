@@ -4,6 +4,7 @@ import type { SetupSettings } from "../../types";
 import { buildGridSpec } from "../geometry";
 import type { CropState, PaletteColor, StitchMatrix } from "../convert/types";
 import { MAX_PALETTE } from "../editor/recolor";
+import { GAUGE_LIMITS, MAX_CHART_SIDE, validGauge } from "../gauge";
 
 /**
  * A saved GridCrow project. The stitch matrix is the one source of truth, so a project is mostly two matrices:
@@ -27,6 +28,8 @@ export interface PackedMatrix {
   palette: string[];
   /** cols * rows palette indices, row by row from the top (the same order as StitchMatrix.cells). */
   cells: Uint8Array;
+  /** The person's own gauge, when the chart has one. */
+  gauge?: { stitchesPerInch: number; rowsPerInch: number };
 }
 
 export interface ProjectData {
@@ -53,7 +56,8 @@ export class ProjectFormatError extends Error {}
 export function packMatrix(m: StitchMatrix): PackedMatrix {
   const cells = new Uint8Array(m.cols * m.rows);
   for (let r = 0; r < m.rows; r++) cells.set(m.cells[r], r * m.cols);
-  return { cols: m.cols, rows: m.rows, palette: m.palette.map((p) => p.hex.toLowerCase()), cells };
+  const packed: PackedMatrix = { cols: m.cols, rows: m.rows, palette: m.palette.map((p) => p.hex.toLowerCase()), cells };
+  return m.gauge ? { ...packed, gauge: m.gauge } : packed;
 }
 
 function colorOf(hex: string): PaletteColor {
@@ -64,7 +68,8 @@ function colorOf(hex: string): PaletteColor {
 export function unpackMatrix(p: PackedMatrix): StitchMatrix {
   const cells: number[][] = [];
   for (let r = 0; r < p.rows; r++) cells.push(Array.from(p.cells.subarray(r * p.cols, (r + 1) * p.cols)));
-  return { cols: p.cols, rows: p.rows, palette: p.palette.map(colorOf), cells };
+  const m: StitchMatrix = { cols: p.cols, rows: p.rows, palette: p.palette.map(colorOf), cells };
+  return p.gauge ? { ...m, gauge: p.gauge } : m;
 }
 
 // ---------- base64 ----------
@@ -87,7 +92,7 @@ export function fromBase64(text: string): Uint8Array {
 // ---------- file ----------
 
 export function projectToJson(p: ProjectData): string {
-  const matrix = (m: PackedMatrix) => ({ cols: m.cols, rows: m.rows, palette: m.palette, cells: toBase64(m.cells) });
+  const matrix = (m: PackedMatrix) => ({ cols: m.cols, rows: m.rows, palette: m.palette, cells: toBase64(m.cells), ...(m.gauge ? { gauge: m.gauge } : {}) });
   return JSON.stringify({
     format: PROJECT_FORMAT,
     version: PROJECT_VERSION,
@@ -133,7 +138,13 @@ function parseMatrix(x: unknown, cols: number, rows: number, what: string): Pack
   const cells = fromBase64(x.cells as string);
   if (cells.length !== cols * rows) throw new ProjectFormatError(`The file's ${what} stitches do not match its size.`);
   for (let i = 0; i < cells.length; i++) if (cells[i] >= palette.length) throw new ProjectFormatError(`The file's ${what} stitches use a color that does not exist.`);
-  return { cols, rows, palette, cells };
+  let gauge: PackedMatrix["gauge"];
+  if (x.gauge !== undefined) {
+    const g = x.gauge;
+    if (!isObj(g) || !validGauge(g)) throw new ProjectFormatError(`The file's ${what} gauge is not valid.`);
+    gauge = { stitchesPerInch: g.stitchesPerInch as number, rowsPerInch: g.rowsPerInch as number };
+  }
+  return gauge ? { cols, rows, palette, cells, gauge } : { cols, rows, palette, cells };
 }
 
 /** Read and check a .gridcrow file's text. Never trusts it: every field is range-checked and rebuilt. */
@@ -150,11 +161,25 @@ export function parseProjectJson(text: string, id: string): ProjectData {
   if (raw.kind !== "picture" && raw.kind !== "blank") throw new ProjectFormatError("The file's kind is not valid.");
   const s = raw.settings;
   if (!isObj(s) || (s.orientation !== "portrait" && s.orientation !== "landscape")) throw new ProjectFormatError("The file's size settings are not valid.");
-  const sizeId = FINISHED_SIZES.find((z) => z.id === s.sizeId)?.id;
   const maxColors = COLOR_OPTIONS.find((c) => c.value === s.maxColors)?.value;
-  if (!sizeId || !maxColors) throw new ProjectFormatError("The file's size settings are not valid.");
-  const settings: SetupSettings = { orientation: s.orientation, sizeId, maxColors };
+  let settings: SetupSettings;
+  if (s.sizeId === "custom") {
+    const c = s.custom;
+    if (!maxColors || !isObj(c)) throw new ProjectFormatError("The file's size settings are not valid.");
+    const custom = {
+      widthInches: num(c.widthInches, 0.5, 400, "width"),
+      heightInches: num(c.heightInches, 0.5, 400, "height"),
+      stitchesPerInch: num(c.stitchesPerInch, GAUGE_LIMITS.stitchesPerInch.min, GAUGE_LIMITS.stitchesPerInch.max, "gauge"),
+      rowsPerInch: num(c.rowsPerInch, GAUGE_LIMITS.rowsPerInch.min, GAUGE_LIMITS.rowsPerInch.max, "gauge"),
+    };
+    settings = { orientation: s.orientation, sizeId: "custom", maxColors, custom };
+  } else {
+    const sizeId = FINISHED_SIZES.find((z) => z.id === s.sizeId)?.id;
+    if (!sizeId || !maxColors) throw new ProjectFormatError("The file's size settings are not valid.");
+    settings = { orientation: s.orientation, sizeId, maxColors };
+  }
   const grid = buildGridSpec(settings);
+  if (grid.cols > MAX_CHART_SIDE || grid.rows > MAX_CHART_SIDE) throw new ProjectFormatError("The file's chart is bigger than GridCrow supports.");
   const converted = parseMatrix(raw.converted, grid.cols, grid.rows, "chart");
   const current = parseMatrix(raw.current, grid.cols, grid.rows, "edited chart");
   const crop = raw.crop;

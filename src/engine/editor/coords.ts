@@ -78,7 +78,7 @@ export function fitZoom(cols: number, rows: number, viewW: number, viewH: number
   if (!(cols > 0 && rows > 0 && viewW > 0 && viewH > 0 && cellAspect > 0)) return 1;
   const heightAtWidthFit = (rows * viewW) / (cols * cellAspect);
   const f = Math.min(1, viewH / heightAtWidthFit);
-  return Math.max(0.01, Math.floor(f * 1000) / 1000);
+  return Math.max(0.01, Math.floor(f * 10000) / 10000);
 }
 
 export function clampZoom(z: number, min = MIN_ZOOM, max = MAX_ZOOM): number {

@@ -3,6 +3,7 @@ import type { ReferenceGauge } from "../config/gauge";
 import { FINISHED_SIZES } from "../config/sizes";
 import type { FinishedSizeId } from "../config/sizes";
 import type { MaxColors, Orientation, SetupSettings } from "../types";
+import { stitchesForSize } from "./gauge";
 
 /**
  * The single description of the chart the user asked for. The setup screen displays it
@@ -10,8 +11,8 @@ import type { MaxColors, Orientation, SetupSettings } from "../types";
  * one place (buildGridSpec below). One grid cell = one single crochet stitch = one solid color.
  */
 export interface GridSpec {
-  /** Selected size preset (portrait listing, e.g. "12x16"). */
-  sizeId: FinishedSizeId;
+  /** Selected size preset (portrait listing, e.g. "12x16"), or "custom" for a size typed in Manual Mode. */
+  sizeId: FinishedSizeId | "custom";
   orientation: Orientation;
   /** Approximate finished width in inches (already reversed for landscape). */
   widthInches: number;
@@ -50,6 +51,23 @@ export function buildGridSpec(
   settings: SetupSettings,
   gauge: ReferenceGauge = REFERENCE_GAUGE,
 ): GridSpec {
+  if (settings.sizeId === "custom") {
+    const c = settings.custom;
+    if (!c) throw new Error("A custom size needs its measurements");
+    const g = { stitchesPerInch: c.stitchesPerInch, rowsPerInch: c.rowsPerInch };
+    const { cols, rows } = stitchesForSize(c.widthInches, c.heightInches, g);
+    return {
+      sizeId: "custom",
+      orientation: settings.orientation,
+      // What the whole stitches really make, so the picture is cropped to the proportions of the stitches.
+      widthInches: cols / g.stitchesPerInch,
+      heightInches: rows / g.rowsPerInch,
+      cols,
+      rows,
+      gauge: { yarnLabel: "your own yarn", hookLabel: "your own hook", ...g },
+      maxColors: settings.maxColors,
+    };
+  }
   const { widthInches, heightInches } = finishedDimensions(settings.sizeId, settings.orientation);
   return {
     sizeId: settings.sizeId,

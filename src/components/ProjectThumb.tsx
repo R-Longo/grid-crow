@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { PackedMatrix } from "../engine/project/format";
+import { aspectOf, gaugeOf } from "../engine/gauge";
 
 /** A tiny picture of a saved chart: one pixel per stitch, drawn big and sharp. */
 export function ProjectThumb({ chart }: { chart: PackedMatrix }) {
@@ -27,7 +28,7 @@ export function ProjectThumb({ chart }: { chart: PackedMatrix }) {
       className="projects__thumb"
       aria-hidden="true"
       data-testid="project-thumb"
-      style={{ aspectRatio: `${chart.cols * 9} / ${chart.rows * 8}` }}
+      style={{ aspectRatio: `${chart.cols * aspectOf(gaugeOf(chart))} / ${chart.rows}` }}
     />
   );
 }

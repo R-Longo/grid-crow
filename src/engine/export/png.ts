@@ -92,7 +92,7 @@ export function wrapText(text: string, maxChars: number): string[] {
 
 function build(model: PatternModel, cellW: number, letters: boolean): PngLayout {
   const s = cellW / 27;
-  const cellH = (cellW * 8) / 9;
+  const cellH = cellW / model.aspect;
   const numberSize = Math.max(9, Math.round(cellH * 0.5));
   const labelStep: 1 | 5 = cellH >= 19 ? 1 : 5;
   const showLetters = letters && cellH >= 20;
@@ -114,7 +114,7 @@ function build(model: PatternModel, cellW: number, letters: boolean): PngLayout 
   let y = M + titleSize * 0.65;
   header.push({ text: "GridCrow crochet chart", x: M, y, size: titleSize, bold: true, serif: true, color: INK, align: "left" });
   y += titleSize * 0.65 + info * 0.9;
-  const lines = [sizeLine(model), finishedLine(model), ...wrapText(gaugeLine(), maxChars), ...wrapText(NUMBERING_NOTE, maxChars)];
+  const lines = [sizeLine(model), finishedLine(model), ...wrapText(gaugeLine(model.gauge), maxChars), ...wrapText(NUMBERING_NOTE, maxChars)];
   lines.forEach((t, i) => {
     header.push({ text: t, x: M, y, size: info, color: i === 0 ? INK : MUTED, bold: i === 0, align: "left" });
     y += info * 1.5;

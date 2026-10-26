@@ -1,4 +1,6 @@
 import { STITCH_ASPECT, finishedLine, sizeLine, NUMBERING_NOTE } from "../pattern";
+import { DEFAULT_GAUGE, isDefaultGauge } from "../../gauge";
+import type { StitchGauge } from "../../gauge";
 import type { PatternModel } from "../pattern";
 import { INK, MUTED, drawRegion } from "./chart";
 import type { Region } from "./chart";
@@ -43,8 +45,28 @@ const CHART_TOP = 100;
 const M = 36;
 const GUTTER = 8;
 
+/**
+ * The profile for a chart's own gauge. Large print draws each stitch at the real size of the person's stitches (72 points per inch),
+ * Compact at three quarters of that, and the page fits as many as it can. At the standard gauge nothing changes.
+ */
+export function adaptProfile(profile: TileProfile, gauge: StitchGauge): TileProfile {
+  if (isDefaultGauge(gauge)) return profile.name === "compact" ? COMPACT_PROFILE : LARGE_PROFILE;
+  const base = profile.name === "compact" ? COMPACT_PROFILE : LARGE_PROFILE;
+  const scale = base.cellH / TILE_CELL_H;
+  const cellW = (72 / gauge.stitchesPerInch) * scale;
+  const cellH = (72 / gauge.rowsPerInch) * scale;
+  return {
+    ...base,
+    cellW,
+    cellH,
+    maxCols: Math.max(1, Math.floor((base.maxCols * base.cellW) / cellW + 1e-9)),
+    maxRows: Math.max(1, Math.floor((base.maxRows * base.cellH) / cellH + 1e-9)),
+  };
+}
+
 export function tilePlanFor(model: PatternModel, profile: TileProfile = LARGE_PROFILE): TilePlan {
-  return planTiles(model.cols, model.rows, profile.maxCols, profile.maxRows, 2);
+  const P = adaptProfile(profile, model.gauge ?? DEFAULT_GAUGE);
+  return planTiles(model.cols, model.rows, P.maxCols, P.maxRows, 2);
 }
 
 /** The row numbers a tile covers, from the chart's own numbering (row 1 is the bottom). */
@@ -196,12 +218,14 @@ function tilePage(model: PatternModel, plan: TilePlan, t: Tile, letters: boolean
 }
 
 /** Large Print: an overview page, then the chart in pages that join along bold alignment lines. */
-export function layoutTiled(model: PatternModel, options: { letters: boolean }, profile: TileProfile = LARGE_PROFILE): PdfPage[] {
+export function layoutTiled(model: PatternModel, options: { letters: boolean }, base: TileProfile = LARGE_PROFILE): PdfPage[] {
+  const profile = adaptProfile(base, model.gauge ?? DEFAULT_GAUGE);
   const plan = tilePlanFor(model, profile);
   return [overviewPage(model, plan, options.letters, profile), ...plan.tiles.map((t) => tilePage(model, plan, t, options.letters, profile))];
 }
 
 /** How many pages Large Print makes for a chart of this size (the overview page plus the chart pages), without building them. */
-export function tiledPageCount(cols: number, rows: number, profile: TileProfile = LARGE_PROFILE): number {
+export function tiledPageCount(cols: number, rows: number, base: TileProfile = LARGE_PROFILE, gauge: StitchGauge = DEFAULT_GAUGE): number {
+  const profile = adaptProfile(base, gauge);
   return 1 + planTiles(cols, rows, profile.maxCols, profile.maxRows, 2).tiles.length;
 }

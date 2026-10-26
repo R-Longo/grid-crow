@@ -24,7 +24,7 @@ export function colorOf(hex: string): PaletteColor {
 export function withSlotColor(m: StitchMatrix, slot: number, hex: string): StitchMatrix {
   const palette = m.palette.slice();
   palette[slot] = colorOf(hex);
-  return { cols: m.cols, rows: m.rows, palette, cells: m.cells };
+  return { ...m, palette };
 }
 
 export function recolorSlot(m: StitchMatrix, slot: number, input: string): RecolorResult {
@@ -62,5 +62,5 @@ export function addColorSlot(m: StitchMatrix, input: string): AddColorResult {
   if (m.palette.length >= MAX_PALETTE) return { ok: false, reason: "full" };
   const other = m.palette.findIndex((p) => p.hex.toLowerCase() === hex);
   if (other >= 0) return { ok: false, reason: "duplicate", slot: other };
-  return { ok: true, matrix: { cols: m.cols, rows: m.rows, palette: [...m.palette, colorOf(hex)], cells: m.cells }, hex, slot: m.palette.length };
+  return { ok: true, matrix: { ...m, palette: [...m.palette, colorOf(hex)] }, hex, slot: m.palette.length };
 }

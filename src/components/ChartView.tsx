@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import { ROWS_PER_INCH, STITCHES_PER_INCH } from "../config/gauge";
+import { aspectOf, gaugeOf } from "../engine/gauge";
 import { cropRect } from "../engine/convert/crop";
 import type { DecodedImage } from "../engine/convert/decode";
 import type { CropState, StitchMatrix } from "../engine/convert/types";
@@ -62,7 +62,6 @@ export function useMedia(query: string): boolean {
 }
 
 /** A stitch is wider than a row is tall: 1/4 in across, 1/4.5 in high. */
-const CELL_ASPECT = ROWS_PER_INCH / STITCHES_PER_INCH; // 1.125
 
 // Grid lines are guides, never stitch colors. Light on a photo chart; gray on a blank canvas, where the stitches start white.
 const LIGHT_LINES = { light: "rgba(255,255,255,0.16)", heavy: "rgba(255,255,255,0.4)" };
@@ -265,13 +264,14 @@ export function ChartView({
 
   // Zoom 1 = the chart is as wide as the preview. The "fit" zoom shows the whole chart, all four edges, in a preview of
   // this width and height (it is below 1 when the chart is taller than the preview). It is the slider's minimum.
-  const fit = fitZoom(matrix.cols, matrix.rows, width, viewH - 2, CELL_ASPECT); // minus the box border, as for the width
+  const cellAspect = aspectOf(gaugeOf(matrix));
+  const fit = fitZoom(matrix.cols, matrix.rows, width, viewH - 2, cellAspect); // minus the box border, as for the width
   const zoom = fitted ? fit : clampZoom(chosenZoom, fit);
   zoomRef.current = zoom;
   fitRef.current = fit;
   // Height of one stitch in pixels.
-  const cellH = width > 0 ? (width / (matrix.cols * CELL_ASPECT)) * zoom : 0;
-  const cellW = cellH * CELL_ASPECT;
+  const cellH = width > 0 ? (width / (matrix.cols * cellAspect)) * zoom : 0;
+  const cellW = cellH * cellAspect;
   const layout: ChartLayout = useMemo(
     () => ({ cols: matrix.cols, rows: matrix.rows, cellW, cellH }),
     [matrix.cols, matrix.rows, cellW, cellH],
@@ -1326,8 +1326,8 @@ export function ChartView({
                 note={exportNote}
                 choices={downloadChoices}
                 onChoices={setDownloadChoices}
-                tiledPages={tiledPageCount(matrix.cols, matrix.rows)}
-                compactPages={tiledPageCount(matrix.cols, matrix.rows, COMPACT_PROFILE)}
+                tiledPages={tiledPageCount(matrix.cols, matrix.rows, undefined, gaugeOf(matrix))}
+                compactPages={tiledPageCount(matrix.cols, matrix.rows, COMPACT_PROFILE, gaugeOf(matrix))}
                 onBackup={onBackup}
               />
             </div>
@@ -1425,8 +1425,8 @@ export function ChartView({
               note={exportNote}
               choices={downloadChoices}
               onChoices={setDownloadChoices}
-              tiledPages={tiledPageCount(matrix.cols, matrix.rows)}
-              compactPages={tiledPageCount(matrix.cols, matrix.rows, COMPACT_PROFILE)}
+              tiledPages={tiledPageCount(matrix.cols, matrix.rows, undefined, gaugeOf(matrix))}
+              compactPages={tiledPageCount(matrix.cols, matrix.rows, COMPACT_PROFILE, gaugeOf(matrix))}
                 onBackup={onBackup}
             />
           </div>

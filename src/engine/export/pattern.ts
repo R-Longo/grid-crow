@@ -1,4 +1,6 @@
 import { ROWS_PER_INCH, STANDARD_GAUGE, STITCHES_PER_INCH } from "../../config/gauge";
+import { aspectOf, describeGauge, gaugeOf, isDefaultGauge, sizeInches } from "../gauge";
+import type { StitchGauge } from "../gauge";
 import type { StitchMatrix } from "../convert/types";
 import { stitchLabel } from "../editor/coords";
 import { colorCounts } from "../editor/paint";
@@ -43,6 +45,9 @@ export interface PatternModel {
   total: number;
   widthInches: number;
   heightInches: number;
+  /** The gauge this chart was made at, and the width / height of one stitch that follows from it. */
+  gauge: StitchGauge;
+  aspect: number;
   /** Rough yarn estimate for the whole chart, in whole yards. */
   lowYards: number;
   highYards: number;
@@ -82,8 +87,9 @@ export function buildPatternModel(matrix: StitchMatrix): PatternModel {
     letterOf,
     hexOf: matrix.palette.map((p) => p.hex.toUpperCase()),
     total: matrix.cols * matrix.rows,
-    widthInches: matrix.cols / STITCHES_PER_INCH,
-    heightInches: matrix.rows / ROWS_PER_INCH,
+    ...sizeInches(matrix.cols, matrix.rows, gaugeOf(matrix)),
+    gauge: gaugeOf(matrix),
+    aspect: aspectOf(gaugeOf(matrix)),
     lowYards: yarn.lowYards,
     highYards: yarn.highYards,
     inchesPerStitch: [yarn.inchesPerStitchLow, yarn.inchesPerStitchHigh],
@@ -126,7 +132,8 @@ export function finishedLine(m: PatternModel): string {
 }
 
 /** "Reference gauge: 16 stitches × 18 rows per 4 inches, using worsted-weight #4 yarn and a 5 mm hook." */
-export function gaugeLine(): string {
+export function gaugeLine(custom?: StitchGauge): string {
+  if (custom && !isDefaultGauge(custom)) return `Gauge: ${describeGauge(custom)}, measured from your own swatch. The chart is drawn to match it.`;
   const g = STANDARD_GAUGE;
   const yarn = g.yarnLabel.toLowerCase().replace(" weight", "-weight");
   return `Reference gauge: ${g.stitchesPerSwatch} stitches × ${g.rowsPerSwatch} rows per ${g.swatchInches} inches, using ${yarn} yarn and a ${g.hookLabel} hook.`;

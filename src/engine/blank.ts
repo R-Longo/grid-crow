@@ -1,3 +1,4 @@
+import { isDefaultGauge } from "./gauge";
 import type { PaletteColor, StitchMatrix } from "./convert/types";
 
 /**
@@ -34,9 +35,10 @@ export function starterPalette(): PaletteColor[] {
 }
 
 /** A white chart of the given size. Every row is its own array. */
-export function makeBlankMatrix(cols: number, rows: number): StitchMatrix {
+export function makeBlankMatrix(cols: number, rows: number, gauge?: { stitchesPerInch: number; rowsPerInch: number }): StitchMatrix {
   if (!Number.isInteger(cols) || !Number.isInteger(rows) || cols < 1 || rows < 1) {
     throw new RangeError("a chart needs a whole number of stitches and rows");
   }
-  return { cols, rows, palette: starterPalette(), cells: Array.from({ length: rows }, () => new Array<number>(cols).fill(BLANK_BACKGROUND_SLOT)) };
+  const m: StitchMatrix = { cols, rows, palette: starterPalette(), cells: Array.from({ length: rows }, () => new Array<number>(cols).fill(BLANK_BACKGROUND_SLOT)) };
+  return gauge && !isDefaultGauge(gauge) ? { ...m, gauge } : m;
 }

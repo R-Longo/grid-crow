@@ -13,7 +13,7 @@ import { useDiscardGuard } from "../state/useDiscardGuard";
 import { settingsReducer } from "../state/setupSettings";
 import { strengthenActive, strengthenOffered } from "../state/strengthenChoice";
 import type { SettingsAction } from "../state/setupSettings";
-import type { SetupSettings } from "../types";
+import type { FinishedSizeId, SetupSettings } from "../types";
 import {
   MAX_FILE_BYTES,
   ProjectFormatError,
@@ -34,11 +34,40 @@ import { CropPreview } from "./CropPreview";
 import { Icon } from "./Icon";
 import { OptionGroup } from "./OptionGroup";
 import { SizeSummary } from "./SizeSummary";
+import { ManualMode } from "./ManualMode";
+import { ModeChoice } from "./ModeChoice";
+import type { SetupMode } from "./ModeChoice";
+import { EMPTY_MANUAL, parseManual, rawFromCustom } from "../engine/manual";
+import type { ManualRaw } from "../engine/manual";
 import { UploadZone } from "./UploadZone";
+
+const GAUGE_KEY = "gridcrow-swatch";
+/** The last swatch the person typed, remembered on this device so a sweater maker does not retype it for every project. */
+function loadSwatch(): ManualRaw {
+  try {
+    const t = JSON.parse(localStorage.getItem(GAUGE_KEY) ?? "null");
+    if (t && typeof t === "object") {
+      const s = (k: string) => (typeof t[k] === "string" ? (t[k] as string).slice(0, 12) : "");
+      return { ...EMPTY_MANUAL, sw: s("sw"), swIn: s("swIn"), sh: s("sh"), shIn: s("shIn") };
+    }
+  } catch {
+    /* no storage: start empty */
+  }
+  return EMPTY_MANUAL;
+}
 
 export function SetupScreen() {
   const [file, setFile] = useState<File | null>(null);
-  const [settings, dispatch] = useReducer(settingsReducer, DEFAULT_SETTINGS);
+  const [presetSettings, dispatch] = useReducer(settingsReducer, DEFAULT_SETTINGS);
+  // Quick Start picks a preset size. Manual Mode types a gauge and a size, which is worked into a custom size here.
+  const [mode, setMode] = useState<SetupMode>("quick");
+  const [manualRaw, setManualRaw] = useState<ManualRaw>(loadSwatch);
+  const manual = useMemo(() => parseManual(manualRaw), [manualRaw]);
+  const manualReady = mode === "manual" && manual.custom !== null;
+  const settings: SetupSettings = useMemo(
+    () => (mode === "manual" && manual.custom ? { ...presetSettings, sizeId: "custom", custom: manual.custom } : presetSettings),
+    [mode, manual.custom, presetSettings],
+  );
   const [image, setImage] = useState<DecodedImage | null>(null);
   const [crop, setCrop] = useState<CropState>(DEFAULT_CROP);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -206,7 +235,13 @@ export function SetupScreen() {
     setRunError(null);
     setStart(data.kind === "blank" ? "scratch" : "image");
     dispatch({ key: "orientation", value: data.settings.orientation });
-    dispatch({ key: "sizeId", value: data.settings.sizeId });
+    if (data.settings.sizeId === "custom" && data.settings.custom) {
+      setMode("manual");
+      setManualRaw({ ...rawFromCustom(data.settings.custom) });
+    } else {
+      setMode("quick");
+      dispatch({ key: "sizeId", value: data.settings.sizeId });
+    }
     dispatch({ key: "maxColors", value: data.settings.maxColors });
     setStrengthen(data.strengthen);
     setCrop(data.crop);
@@ -304,10 +339,30 @@ export function SetupScreen() {
     setStatus("idle");
   }, []);
 
+  const chooseMode = (next: SetupMode) => {
+    if (next === mode) return;
+    guard.request("Changing the size", () => {
+      invalidate();
+      setMode(next);
+    });
+  };
+  const changeManual = (next: ManualRaw) => {
+    guard.request("Changing the size", () => {
+      invalidate();
+      setManualRaw(next);
+      try {
+        localStorage.setItem(GAUGE_KEY, JSON.stringify({ sw: next.sw, swIn: next.swIn, sh: next.sh, shIn: next.shIn }));
+      } catch {
+        /* the swatch just is not remembered */
+      }
+    });
+  };
+
   const WHAT: Record<keyof SetupSettings, string> = {
     orientation: "Changing the orientation",
     sizeId: "Changing the size",
     maxColors: "Changing the maximum colors",
+    custom: "Changing the size",
   };
   const update = <K extends keyof SetupSettings>(key: K, value: SetupSettings[K]) => {
     guard.request(WHAT[key], () => {
@@ -398,7 +453,7 @@ export function SetupScreen() {
     requestId.current++;
     setRunError(null);
     setStatus("done");
-    const res = { matrix: makeBlankMatrix(grid.cols, grid.rows), crop: DEFAULT_CROP, aspect, blank: true };
+    const res = { matrix: makeBlankMatrix(grid.cols, grid.rows, { stitchesPerInch: grid.gauge.stitchesPerInch, rowsPerInch: grid.gauge.rowsPerInch }), crop: DEFAULT_CROP, aspect, blank: true };
     setResult(res);
     beginProject(res, null);
   };
@@ -449,8 +504,12 @@ export function SetupScreen() {
           message={projectMsg}
           storageOk={storageOk}
         />
-        <fieldset className="start">
-          <legend>How do you want to begin?</legend>
+        <ModeChoice mode={mode} onChange={chooseMode} />
+        {mode === "manual" && (
+          <ManualMode raw={manualRaw} onRaw={changeManual} start={start} onStart={chooseStart} onBack={() => chooseMode("quick")} />
+        )}
+        <fieldset className="start" hidden={mode === "manual"}>
+          <legend>Convert a picture, or draw from scratch?</legend>
           <div className="start__cards">
             {(
               [
@@ -502,23 +561,27 @@ export function SetupScreen() {
         )}
 
         <div className="fields">
-          <OptionGroup
-            legend="Orientation"
-            options={ORIENTATION_OPTIONS}
-            value={settings.orientation}
-            onChange={(v) => update("orientation", v)}
-          />
+          {mode === "quick" && (
+            <>
+              <OptionGroup
+                legend="Orientation"
+                options={ORIENTATION_OPTIONS}
+                value={settings.orientation}
+                onChange={(v) => update("orientation", v)}
+              />
 
-          <div>
-            <OptionGroup
-              legend="Finished tapestry size"
-              options={sizeOptions(settings.orientation)}
-              value={settings.sizeId}
-              onChange={(v) => update("sizeId", v)}
-              columns={2}
-            />
-            <SizeSummary grid={grid} />
-          </div>
+              <div>
+                <OptionGroup
+                  legend="Finished tapestry size"
+                  options={sizeOptions(settings.orientation)}
+                  value={settings.sizeId as FinishedSizeId}
+                  onChange={(v) => update("sizeId", v)}
+                  columns={2}
+                />
+                <SizeSummary grid={grid} />
+              </div>
+            </>
+          )}
 
           {!scratch && offerStrengthen && (
             <fieldset className="strengthen">
@@ -586,27 +649,32 @@ export function SetupScreen() {
 
         <div className="cta">
           {scratch ? (
-            <button
-              type="button"
-              className="btn btn--primary"
-              data-testid="open-blank"
-              onClick={() => guard.request("Starting a new canvas", openBlank)}
-            >
-              Open Blank Canvas
-              <Icon name="arrow" size={20} />
-            </button>
+            <>
+              <button
+                type="button"
+                className="btn btn--primary"
+                data-testid="open-blank"
+                disabled={mode === "manual" && !manualReady}
+                onClick={() => guard.request("Starting a new canvas", openBlank)}
+              >
+                Open Blank Canvas
+                <Icon name="arrow" size={20} />
+              </button>
+              {mode === "manual" && !manualReady && <p className="cta-hint" data-testid="manual-hint">Finish steps 1 and 2 to continue.</p>}
+            </>
           ) : (
             <>
               <button
                 type="button"
                 className="btn btn--primary"
-                disabled={!image || status === "working"}
+                disabled={!image || status === "working" || (mode === "manual" && !manualReady)}
                 onClick={() => guard.request("Building a new grid", create)}
               >
                 {status === "working" ? "Building your grid…" : "Create My Crochet Grid"}
                 <Icon name="arrow" size={20} />
               </button>
-              {!file && <p className="cta-hint">Add a picture to continue.</p>}
+              {mode === "manual" && !manualReady && <p className="cta-hint" data-testid="manual-hint">Finish steps 1 and 2 to continue.</p>}
+              {!file && (mode === "quick" || manualReady) && <p className="cta-hint">Add a picture to continue.</p>}
             </>
           )}
 

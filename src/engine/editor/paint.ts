@@ -32,7 +32,7 @@ export function paintStitches(
     changed.push(s);
   }
   if (changed.length === 0) return { matrix: m, changed };
-  return { matrix: { cols: m.cols, rows: m.rows, palette: m.palette, cells }, changed };
+  return { matrix: { ...m, cells }, changed };
 }
 
 /** Every stitch on the straight line from a to b, ends included (Bresenham), so a fast drag leaves no gaps. */

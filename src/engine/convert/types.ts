@@ -43,6 +43,8 @@ export interface StitchMatrix {
   rows: number;
   palette: PaletteColor[];
   cells: number[][];
+  /** The person's own gauge, when they set one. Absent means the standard gauge. */
+  gauge?: { stitchesPerInch: number; rowsPerInch: number };
 }
 
 export type ConversionErrorCode =

@@ -50,7 +50,7 @@ export function drawInfo(ops: Op[], model: PatternModel, x: number, y: number, w
   ops.push({ k: "text", x: x + w, y, s: `About ${yardsText(model.lowYards, model.highYards)} of yarn (rough estimate)`, size: 11, bold: true, color: INK, align: "right", tag: "legend-yarn-total" });
   y += 6;
   y = paragraph(ops, sizeLine(model) + ". " + finishedLine(model) + ".", x, y, w, 10, { color: INK });
-  y = paragraph(ops, gaugeLine(), x, y, w, 9.5);
+  y = paragraph(ops, gaugeLine(model.gauge), x, y, w, 9.5);
   y = paragraph(ops, NUMBERING_NOTE, x, y, w, 9.5);
   y = paragraph(ops, `${STITCH_COUNT_NOTE} ${yarnNote(model)}`, x, y, w, 9.5, { tag: "yarn-note" });
   for (const e of extra) y = paragraph(ops, e, x, y, w, 9.5);

@@ -1,4 +1,4 @@
-import { STITCH_ASPECT, finishedLine, sizeLine, NUMBERING_NOTE } from "../pattern";
+import { finishedLine, sizeLine, NUMBERING_NOTE } from "../pattern";
 import type { PatternModel } from "../pattern";
 import { INK, MUTED, drawRegion } from "./chart";
 import type { Region } from "./chart";
@@ -32,7 +32,7 @@ function planFor(model: PatternModel, landscape: boolean, reservedBelow: number)
   const pageH = landscape ? LETTER.width : LETTER.height;
   const availW = pageW - 2 * (M + LABEL + 2);
   const availH = pageH - (M + HEADER + LABEL) - (M + LABEL) - reservedBelow;
-  const cellH = Math.min(availW / (model.cols * STITCH_ASPECT), availH / model.rows, MAX_CELL);
+  const cellH = Math.min(availW / (model.cols * model.aspect), availH / model.rows, MAX_CELL);
   return { landscape, pageW, pageH, cellH };
 }
 
@@ -59,7 +59,7 @@ export function layoutFit(model: PatternModel, options: { letters: boolean }): P
   const inlineKey = withKey.cellH >= full.cellH * 0.9;
   const plan = inlineKey ? withKey : full;
   const { pageW, pageH, cellH } = plan;
-  const cellW = cellH * STITCH_ASPECT;
+  const cellW = cellH * model.aspect;
 
   const lettersFit = cellH >= MIN_LETTER_CELL;
   const letters = options.letters && lettersFit;

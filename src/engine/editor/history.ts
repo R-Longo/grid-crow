@@ -60,7 +60,7 @@ export function applyEdit(m: StitchMatrix, e: Edit, direction: "undo" | "redo"):
   }
   if (e.label === "addcolor") {
     const palette = direction === "undo" ? m.palette.slice(0, e.slot as number) : [...m.palette, colorOf(e.toHex as string)];
-    return { matrix: { cols: m.cols, rows: m.rows, palette, cells: m.cells }, stitches: [] };
+    return { matrix: { ...m, palette }, stitches: [] };
   }
   const cols = m.cols;
   const values = direction === "undo" ? e.before : e.after;
@@ -78,7 +78,7 @@ export function applyEdit(m: StitchMatrix, e: Edit, direction: "undo" | "redo"):
     cells[row][col] = values[k];
     stitches.push({ col, row });
   }
-  return { matrix: { cols: m.cols, rows: m.rows, palette: m.palette, cells }, stitches };
+  return { matrix: { ...m, cells }, stitches };
 }
 
 /** Does the chart currently hold what the edit expects to find (all "after" values for undo, "before" for redo)? */

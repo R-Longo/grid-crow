@@ -2456,3 +2456,58 @@ body {
 .textpanel__row .chart__small[aria-pressed="true"] { outline: 3px solid #e8b84f; outline-offset: 1px; }
 .textpanel__size { font-weight: 600; min-width: 4.5rem; text-align: center; }
 .textpanel__info { margin: 0; font-size: 0.875rem; }
+
+/* ---------- Quick Start / Manual Mode ---------- */
+.mode { display: grid; gap: var(--space-2); margin: 0 0 var(--space-4); }
+.mode__tiles { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+.mode__tile {
+  position: relative; display: grid; justify-items: center; align-content: center; gap: 2px; text-align: center;
+  min-height: 88px; padding: var(--space-3); border: 1.5px solid #e8b84f; border-radius: var(--radius-md);
+  background: rgba(232, 184, 79, 0.1); color: #e8b84f; cursor: pointer;
+}
+.mode__tile input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.mode__tile:hover { background: rgba(232, 184, 79, 0.2); }
+.mode__tile:has(input:checked) { background: #e8b84f; color: #17191b; }
+.mode__tile:has(input:focus-visible) { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+.mode__title { font-weight: 700; font-family: var(--font-serif); font-size: 1.1rem; }
+.mode__sub { font-size: 0.8rem; line-height: 1.25; opacity: 0.9; }
+
+.manual { display: grid; gap: var(--space-3); margin: 0 0 var(--space-4); }
+.manual__back {
+  justify-self: start; min-height: 44px; padding: 0 var(--space-2); background: none; border: 0; color: var(--accent); cursor: pointer; font-weight: 600;
+}
+.manual__title { margin: 0; font-family: var(--font-serif); font-size: 1.7rem; line-height: 1.15; }
+.manual__lead { margin: 0; color: var(--text-muted); }
+.manual__step { display: grid; gap: var(--space-2); padding: var(--space-4); background: var(--control); border: 1px solid var(--border); border-radius: var(--radius-md); }
+.manual__step h3 { margin: 0; font-family: var(--font-serif); font-size: 1.15rem; display: flex; gap: var(--space-2); align-items: center; }
+.manual__step p { margin: 0; font-size: 0.92rem; }
+.manual__num {
+  display: inline-grid; place-items: center; width: 1.7rem; height: 1.7rem; border-radius: 50%; background: #e8b84f; color: #17191b; font-weight: 700; font-size: 0.95rem;
+}
+.manual__grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2) var(--space-3); }
+.manual__field { display: grid; gap: 2px; }
+.manual__field label { font-size: 0.8rem; color: var(--text-muted); }
+.manual__field input {
+  min-height: 44px; padding: 0 var(--space-3); border-radius: var(--radius-sm); border: 1.5px solid var(--border-strong); background: #fff; color: #17191b; font-size: 1rem;
+}
+.manual__field input:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 1px; }
+.manual__gauge, .manual__result {
+  display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); align-items: baseline; padding: var(--space-3); border: 1.5px solid #e8b84f; border-radius: var(--radius-sm); font-size: 0.92rem;
+}
+.manual__big { font-family: var(--font-serif); font-size: 1.5rem; color: #e8b84f; margin-right: 4px; }
+.manual__problem { color: var(--danger); }
+.manual__links { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); }
+.manual__link { min-height: 44px; padding: 0; background: none; border: 0; color: var(--accent); text-decoration: underline; cursor: pointer; text-align: left; }
+.manual__tip { color: var(--text-muted); font-size: 0.82rem !important; }
+.manual__start { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+.manual__startcard {
+  position: relative; display: grid; justify-items: center; gap: 2px; text-align: center; min-height: 88px; padding: var(--space-3);
+  border: 1.5px solid var(--selected-border); border-radius: var(--radius-md); background: var(--selected-bg); cursor: pointer;
+}
+.manual__startcard input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.manual__startcard:has(input:checked) { background: var(--cta); color: var(--cta-text); border-color: var(--cta); }
+.manual__startcard:has(input:focus-visible) { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+.manual__starttitle { font-weight: 700; }
+.manual__startsub { font-size: 0.8rem; opacity: 0.9; }
+@media (max-width: 22rem) { .manual__grid, .mode__tiles, .manual__start { grid-template-columns: 1fr; } }
+.start[hidden] { display: none; }

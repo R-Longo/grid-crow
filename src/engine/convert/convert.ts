@@ -1,4 +1,5 @@
 import type { GridSpec } from "../geometry";
+import { isDefaultGauge } from "../gauge";
 import { cleanupMatrix } from "./cleanup";
 import { labToRgb, rgbToLab, toHex } from "./color";
 import { cropRect, physicalAspect } from "./crop";
@@ -54,7 +55,10 @@ export function convertRaster(raster: Raster, crop: CropState, spec: GridSpec): 
 
   const raw = stitchify(smooth, workW, cols, rows, BLOCK, cents, k);
   const cleaned = cleanupMatrix(raw, cents, k);
-  return finalize(cleaned, cents, k);
+  const matrix = finalize(cleaned, cents, k);
+  // A chart made at the person's own gauge remembers it; one at the standard gauge stays exactly as it always was.
+  const g = { stitchesPerInch: spec.gauge.stitchesPerInch, rowsPerInch: spec.gauge.rowsPerInch };
+  return isDefaultGauge(g) ? matrix : { ...matrix, gauge: g };
 }
 
 /** Remove unused/duplicate colors and order the palette by how many stitches use each color. */

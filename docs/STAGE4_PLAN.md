@@ -260,3 +260,11 @@ Once a chart opens, the editor is a workspace the height of the screen (under th
 - Text tool (Text button next to Pan): type, tap the chart to centre the lettering there, nudge with arrows, **Add to chart** stamps it in the selected yarn color as ONE undo step (`EditorSession.placeStitches`). While the panel is open the chart is for placing only (no painting). Text bigger than the chart is refused with a message.
 - Tests: `fonts.test.ts`, e2e `text_browser.py`.
 - Next: warn at conversion when text in the picture is too small to survive; optional text-protecting converter mode.
+
+## 24. More presets, Quick Start / Manual Mode, custom gauge
+
+- Presets are now eight: 6×8, 8×10, **9×16 (tall)**, **12×12 (square)**, 12×16, 16×20, 18×24, 24×32 inches. 9×16 landscape is 40.5 rows, rounded to 41.
+- Setup has two tiles: **Quick Start** (presets, the standard gauge of 4 stitches and 4.5 rows per inch) and **Manual Mode** (your own gauge and size).
+- Manual Mode page: 1) type a swatch (stitches and rows counted, inches measured) to get stitches and rows per inch (`gaugeFromSwatch`), with a "use the standard gauge" button; 2) finished width and height in inches, shown as stitches × rows (`parseManual` in `engine/manual.ts`, limit 200 stitches or rows a side); 3) Blank canvas or Pick a picture. The last swatch is remembered on the device.
+- Gauge is a property of the chart: optional `gauge` on `StitchMatrix` (absent = standard, so older charts and projects are unchanged). It sets the stitch shape on screen, the finished size, the yarn estimate, PNG, all three PDF layouts (large print draws stitches at real size), thumbnails, and is saved in projects (`settings.custom`, `gauge` on each saved matrix).
+- Not done yet: centimetres.

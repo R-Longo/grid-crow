@@ -6,7 +6,7 @@ import type { SetupSettings } from "../types";
  * and so on. Kept as a plain function so it can be tested without React.
  */
 export type SettingsAction = {
-  [K in keyof SetupSettings]: { key: K; value: SetupSettings[K] };
+  [K in keyof SetupSettings]-?: { key: K; value: SetupSettings[K] };
 }[keyof SetupSettings];
 
 export function settingsReducer(settings: SetupSettings, action: SettingsAction): SetupSettings {
