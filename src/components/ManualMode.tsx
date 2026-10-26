@@ -1,6 +1,8 @@
 import { useId } from "react";
 import { MAX_CHART_SIDE, describeGauge } from "../engine/gauge";
-import { EMPTY_MANUAL, STANDARD_SWATCH, parseManual } from "../engine/manual";
+import { EMPTY_MANUAL, parseManual, standardSwatch } from "../engine/manual";
+import { gaugePer, lengthLong, sizeText } from "../engine/units";
+import type { UnitSystem } from "../engine/units";
 import type { ManualRaw } from "../engine/manual";
 import { Icon } from "./Icon";
 
@@ -10,14 +12,17 @@ interface ManualModeProps {
   start: "image" | "scratch";
   onStart: (s: "image" | "scratch") => void;
   onBack: () => void;
+  units: UnitSystem;
 }
 
-const n1 = (v: number) => String(Number(v.toFixed(2)));
+const n1 = (v: number, digits = 2) => String(Number(v.toFixed(digits)));
 
 /** Manual Mode: measure a swatch, say how big the piece should be, then start blank or from a picture. */
-export function ManualMode({ raw, onRaw, start, onStart, onBack }: ManualModeProps) {
+export function ManualMode({ raw, onRaw, start, onStart, onBack, units }: ManualModeProps) {
   const ids = { sw: useId(), swIn: useId(), sh: useId(), shIn: useId(), w: useId(), h: useId() };
-  const r = parseManual(raw);
+  const r = parseManual(raw, units);
+  const long = lengthLong(units);
+  const per = r.gauge ? gaugePer(r.gauge, units) : null;
   const set = (k: keyof ManualRaw) => (e: React.ChangeEvent<HTMLInputElement>) => onRaw({ ...raw, [k]: e.target.value });
   const field = (k: keyof ManualRaw, label: string, placeholder: string) => (
     <div className="manual__field">
@@ -43,24 +48,24 @@ export function ManualMode({ raw, onRaw, start, onStart, onBack }: ManualModePro
         </p>
         <div className="manual__grid">
           {field("sw", "Stitches counted (width)", "10")}
-          {field("swIn", "inches (width)", "2.5")}
+          {field("swIn", `${long} (width)`, units === "metric" ? "6.5" : "2.5")}
           {field("sh", "Rows counted (height)", "10")}
-          {field("shIn", "inches (height)", "2.5")}
+          {field("shIn", `${long} (height)`, units === "metric" ? "6.5" : "2.5")}
         </div>
         <div className="manual__gauge" data-testid="manual-gauge" role="status" aria-live="polite">
           {r.gauge ? (
             <>
               <strong>Your gauge</strong>
-              <span className="manual__big" data-testid="manual-spi">{n1(r.gauge.stitchesPerInch)}</span> stitches per inch
-              <span className="manual__big" data-testid="manual-rpi">{n1(r.gauge.rowsPerInch)}</span> rows per inch
+              <span className="manual__big" data-testid="manual-spi">{n1(per!.stitches, units === "metric" ? 1 : 2)}</span> stitches per {per!.per}
+              <span className="manual__big" data-testid="manual-rpi">{n1(per!.rows, units === "metric" ? 1 : 2)}</span> rows per {per!.per}
             </>
           ) : (
             <span className={r.gaugeProblem ? "manual__problem" : ""}>{r.gaugeProblem || "Your gauge will show here once you type your swatch."}</span>
           )}
         </div>
         <div className="manual__links">
-          <button type="button" className="manual__link" data-testid="manual-standard" onClick={() => onRaw({ ...raw, ...STANDARD_SWATCH })}>
-            Use the standard gauge (4 stitches and 4.5 rows per inch)
+          <button type="button" className="manual__link" data-testid="manual-standard" onClick={() => onRaw({ ...raw, ...standardSwatch(units) })}>
+            Use the standard gauge ({units === "metric" ? "about 15.7 stitches and 17.7 rows per 10 cm" : "4 stitches and 4.5 rows per inch"})
           </button>
           {raw.sw || raw.swIn || raw.sh || raw.shIn ? (
             <button type="button" className="manual__link" onClick={() => onRaw({ ...raw, sw: "", swIn: "", sh: "", shIn: "" })}>
@@ -68,7 +73,7 @@ export function ManualMode({ raw, onRaw, start, onStart, onBack }: ManualModePro
             </button>
           ) : null}
         </div>
-        <p className="manual__tip">Let the swatch rest flat before you measure. Already know your gauge? Type its stitches and inches (for example 16 stitches over 4 inches).</p>
+        <p className="manual__tip">Let the swatch rest flat before you measure. Already know your gauge? Type its stitches and {long} (for example {units === "metric" ? "16 stitches over 10 cm" : "16 stitches over 4 inches"}).</p>
       </div>
 
       <div className="manual__step">
@@ -77,15 +82,15 @@ export function ManualMode({ raw, onRaw, start, onStart, onBack }: ManualModePro
         </h3>
         <p>Type the finished size you want. We work out the stitches and rows.</p>
         <div className="manual__grid manual__grid--two">
-          {field("w", "Width (inches)", "20")}
-          {field("h", "Height (inches)", "24")}
+          {field("w", `Width (${long})`, units === "metric" ? "50" : "20")}
+          {field("h", `Height (${long})`, units === "metric" ? "60" : "24")}
         </div>
         <div className="manual__result" data-testid="manual-result" role="status" aria-live="polite">
           {r.cols !== null && r.rows !== null && r.gauge && r.actualWidth !== null && r.actualHeight !== null ? (
             <>
               <strong data-testid="manual-grid">= {r.cols} stitches × {r.rows} rows</strong>
               <span>
-                about {n1(r.actualWidth)} × {n1(r.actualHeight)} in ({describeGauge(r.gauge)})
+                about {sizeText(r.actualWidth, r.actualHeight, units)} ({describeGauge(r.gauge, units)})
               </span>
             </>
           ) : (

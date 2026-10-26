@@ -267,4 +267,13 @@ Once a chart opens, the editor is a workspace the height of the screen (under th
 - Setup has two tiles. **Quick Start** is picture conversion with the eight presets at the standard gauge (4 stitches and 4.5 rows per inch). **Manual Mode** opens its own page (with "Back to home") for your gauge and size, and is the only place to draw from scratch. The old Convert an Image / Draw from Scratch buttons are gone.
 - Manual Mode page: 1) type a swatch (stitches and rows counted, inches measured) to get stitches and rows per inch (`gaugeFromSwatch`), with a "use the standard gauge" button; 2) finished width and height in inches, shown as stitches × rows (`parseManual` in `engine/manual.ts`, limit 200 stitches or rows a side); 3) Blank canvas or Pick a picture. The last swatch is remembered on the device.
 - Gauge is a property of the chart: optional `gauge` on `StitchMatrix` (absent = standard, so older charts and projects are unchanged). It sets the stitch shape on screen, the finished size, the yarn estimate, PNG, all three PDF layouts (large print draws stitches at real size), thumbnails, and is saved in projects (`settings.custom`, `gauge` on each saved matrix).
-- Not done yet: centimetres.
+
+## 25. Centimetres and metres (international)
+
+- `src/engine/units.ts`: display-only units. Charts, projects and gauge stay in inches inside; the screen, setup, Manual Mode, size summary, PNG/PDF keys and yarn estimate switch to cm and metres. Gauge shows per 10 cm. Yarn shows metres (rounded up); the skein length is remembered per unit.
+- A toggle (Inches / Centimetres) sits above the mode tiles. The default follows the browser language (US, Liberia, Myanmar: inches; everyone else: centimetres); the choice is remembered (`gridcrow-units`). Switching keeps typed measurements (converted).
+- Preset labels in metric are rounded cm. Tests: `units.test.ts`, metric checks in `manual_browser.py`.
+
+## 26. Strengthen Lines on 9 x 16
+
+- Offered when the chart is 48+ stitches wide OR has 2500+ stitches in all, so the tall 9 x 16 (36 x 72) gets it while 6 x 8 and 8 x 10 do not. `strengthenOffered(cols, rows)`.

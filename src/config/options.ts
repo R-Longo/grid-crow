@@ -2,6 +2,8 @@ import type { IconName } from "../components/Icon";
 import { finishedDimensions } from "../engine/geometry";
 import type { FinishedSizeId, MaxColors, Orientation, SetupSettings } from "../types";
 import { DEFAULT_SIZE_ID, FINISHED_SIZES } from "./sizes";
+import { sizeText } from "../engine/units";
+import type { UnitSystem } from "../engine/units";
 
 // Choices shown on the setup screen.
 // Gauge lives in config/gauge.ts and sizes in config/sizes.ts.
@@ -21,12 +23,12 @@ export const ORIENTATION_OPTIONS: OptionDef<Orientation>[] = [
 ];
 
 /** The six finished sizes, labelled with real dimensions (reversed for landscape). */
-export function sizeOptions(orientation: Orientation): OptionDef<FinishedSizeId>[] {
+export function sizeOptions(orientation: Orientation, units: UnitSystem = "imperial"): OptionDef<FinishedSizeId>[] {
   return FINISHED_SIZES.map((s) => {
     const { widthInches, heightInches } = finishedDimensions(s.id, orientation);
     return {
       value: s.id,
-      label: `${widthInches} × ${heightInches} in`,
+      label: units === "metric" ? sizeText(widthInches, heightInches, units) : `${widthInches} × ${heightInches} in`,
       icon: `ratio-${widthInches}-${heightInches}` as const,
     };
   });

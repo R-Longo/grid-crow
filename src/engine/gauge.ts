@@ -1,5 +1,7 @@
 import { ROWS_PER_INCH, STITCHES_PER_INCH } from "../config/gauge";
 import type { StitchMatrix } from "./convert/types";
+import { gaugePer } from "./units";
+import type { UnitSystem } from "./units";
 
 /**
  * A crocheter's own gauge: how many stitches and rows fit in one inch of THEIR fabric.
@@ -63,9 +65,10 @@ export function sizeInches(cols: number, rows: number, g: StitchGauge): { widthI
 }
 
 /** "5 stitches and 6 rows per inch" with trailing zeros trimmed. */
-export function describeGauge(g: StitchGauge): string {
+export function describeGauge(g: StitchGauge, units: UnitSystem = "imperial"): string {
   const n = (v: number) => String(Number(v.toFixed(2)));
-  return `${n(g.stitchesPerInch)} stitches and ${n(g.rowsPerInch)} rows per inch`;
+  const p = gaugePer(g, units);
+  return `${n(p.stitches)} stitches and ${n(p.rows)} rows per ${p.per}`;
 }
 
 /** Does a chart keep the gauge it carries when copied? Helper for code that rebuilds a matrix. */

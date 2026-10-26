@@ -42,15 +42,15 @@ export function drawInfo(ops: Op[], model: PatternModel, x: number, y: number, w
     ops.push({ k: "text", x: cx + sw + 8, y: base, s: c.letter, size: 12, bold: true, color: INK, tag: "legend-letter" });
     ops.push({ k: "text", x: cx + sw + 8 + 22, y: base, s: c.hex, size: 11, color: INK, tag: "legend-hex" });
     ops.push({ k: "text", x: cx + colW - 78, y: base, s: `${formatCount(c.count)} ${c.count === 1 ? "stitch" : "stitches"}`, size: 11, color: INK, align: "right", tag: "legend-count" });
-    ops.push({ k: "text", x: cx + colW, y: base, s: yardsText(c.lowYards, c.highYards), size: 10.5, color: INK, align: "right", tag: "legend-yards" });
+    ops.push({ k: "text", x: cx + colW, y: base, s: yardsText(c.lowYards, c.highYards, model.units), size: 10.5, color: INK, align: "right", tag: "legend-yards" });
   });
   y += perCol * rowH + 6;
   y += 11;
   ops.push({ k: "text", x, y, s: `Total: ${formatCount(model.total)} stitches (${model.cols} × ${model.rows})`, size: 11, bold: true, color: INK, tag: "legend-total" });
-  ops.push({ k: "text", x: x + w, y, s: `About ${yardsText(model.lowYards, model.highYards)} of yarn (rough estimate)`, size: 11, bold: true, color: INK, align: "right", tag: "legend-yarn-total" });
+  ops.push({ k: "text", x: x + w, y, s: `About ${yardsText(model.lowYards, model.highYards, model.units)} of yarn (rough estimate)`, size: 11, bold: true, color: INK, align: "right", tag: "legend-yarn-total" });
   y += 6;
   y = paragraph(ops, sizeLine(model) + ". " + finishedLine(model) + ".", x, y, w, 10, { color: INK });
-  y = paragraph(ops, gaugeLine(model.gauge), x, y, w, 9.5);
+  y = paragraph(ops, gaugeLine(model.gauge, model.units), x, y, w, 9.5);
   y = paragraph(ops, NUMBERING_NOTE, x, y, w, 9.5);
   y = paragraph(ops, `${STITCH_COUNT_NOTE} ${yarnNote(model)}`, x, y, w, 9.5, { tag: "yarn-note" });
   for (const e of extra) y = paragraph(ops, e, x, y, w, 9.5);

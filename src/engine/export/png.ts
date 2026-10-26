@@ -114,7 +114,7 @@ function build(model: PatternModel, cellW: number, letters: boolean): PngLayout 
   let y = M + titleSize * 0.65;
   header.push({ text: "GridCrow crochet chart", x: M, y, size: titleSize, bold: true, serif: true, color: INK, align: "left" });
   y += titleSize * 0.65 + info * 0.9;
-  const lines = [sizeLine(model), finishedLine(model), ...wrapText(gaugeLine(model.gauge), maxChars), ...wrapText(NUMBERING_NOTE, maxChars)];
+  const lines = [sizeLine(model), finishedLine(model), ...wrapText(gaugeLine(model.gauge, model.units), maxChars), ...wrapText(NUMBERING_NOTE, maxChars)];
   lines.forEach((t, i) => {
     header.push({ text: t, x: M, y, size: info, color: i === 0 ? INK : MUTED, bold: i === 0, align: "left" });
     y += info * 1.5;
@@ -149,7 +149,7 @@ function build(model: PatternModel, cellW: number, letters: boolean): PngLayout 
       letterText: { text: c.letter, x: letterX, y: cy, size: legendSize, bold: true, color: INK, align: "left" },
       hexText: { text: c.hex, x: letterX + Math.round(legendSize * 1.9), y: cy, size: legendSize, color: INK, align: "left" },
       countText: { text: `${formatCount(c.count)} ${c.count === 1 ? "stitch" : "stitches"}`, x: letterX + Math.round(legendSize * 16.5), y: cy, size: legendSize, color: INK, align: "right" },
-      yardsText: { text: `about ${yardsText(c.lowYards, c.highYards)}`, x: letterX + Math.round(legendSize * 28.5), y: cy, size: legendSize, color: INK, align: "right" },
+      yardsText: { text: `about ${yardsText(c.lowYards, c.highYards, model.units)}`, x: letterX + Math.round(legendSize * 28.5), y: cy, size: legendSize, color: INK, align: "right" },
     };
   });
   const legendBottom = entriesTop + perCol * rowH;
@@ -163,7 +163,7 @@ function build(model: PatternModel, cellW: number, letters: boolean): PngLayout 
     align: "left",
   };
   const yarnTotal: TextItem = {
-    text: `Rough yarn estimate: about ${yardsText(model.lowYards, model.highYards)} in all`,
+    text: `Rough yarn estimate: about ${yardsText(model.lowYards, model.highYards, model.units)} in all`,
     x: M,
     y: total.y + Math.round(legendSize * 1.5),
     size: legendSize,

@@ -37,18 +37,22 @@ import { SizeSummary } from "./SizeSummary";
 import { ManualMode } from "./ManualMode";
 import { ModeChoice } from "./ModeChoice";
 import type { SetupMode } from "./ModeChoice";
-import { EMPTY_MANUAL, parseManual, rawFromCustom } from "../engine/manual";
+import { EMPTY_MANUAL, convertRaw, parseManual, rawFromCustom } from "../engine/manual";
+import { loadUnits, saveUnits, sizeText } from "../engine/units";
+import type { UnitSystem } from "../engine/units";
+import { UnitToggle } from "./UnitToggle";
 import type { ManualRaw } from "../engine/manual";
 import { UploadZone } from "./UploadZone";
 
 const GAUGE_KEY = "gridcrow-swatch";
 /** The last swatch the person typed, remembered on this device so a sweater maker does not retype it for every project. */
-function loadSwatch(): ManualRaw {
+function loadSwatch(units: UnitSystem): ManualRaw {
   try {
     const t = JSON.parse(localStorage.getItem(GAUGE_KEY) ?? "null");
     if (t && typeof t === "object") {
       const s = (k: string) => (typeof t[k] === "string" ? (t[k] as string).slice(0, 12) : "");
-      return { ...EMPTY_MANUAL, sw: s("sw"), swIn: s("swIn"), sh: s("sh"), shIn: s("shIn") };
+      // Kept in inches on the device, shown in whichever unit is chosen.
+      return convertRaw({ ...EMPTY_MANUAL, sw: s("sw"), swIn: s("swIn"), sh: s("sh"), shIn: s("shIn") }, "imperial", units);
     }
   } catch {
     /* no storage: start empty */
@@ -61,8 +65,9 @@ export function SetupScreen() {
   const [presetSettings, dispatch] = useReducer(settingsReducer, DEFAULT_SETTINGS);
   // Quick Start picks a preset size. Manual Mode types a gauge and a size, which is worked into a custom size here.
   const [mode, setMode] = useState<SetupMode>("quick");
-  const [manualRaw, setManualRaw] = useState<ManualRaw>(loadSwatch);
-  const manual = useMemo(() => parseManual(manualRaw), [manualRaw]);
+  const [units, setUnits] = useState<UnitSystem>(loadUnits);
+  const [manualRaw, setManualRaw] = useState<ManualRaw>(() => loadSwatch(units));
+  const manual = useMemo(() => parseManual(manualRaw, units), [manualRaw, units]);
   const manualReady = mode === "manual" && manual.custom !== null;
   const settings: SetupSettings = useMemo(
     () => (mode === "manual" && manual.custom ? { ...presetSettings, sizeId: "custom", custom: manual.custom } : presetSettings),
@@ -237,11 +242,11 @@ export function SetupScreen() {
     dispatch({ key: "orientation", value: data.settings.orientation });
     if (data.settings.sizeId === "custom" && data.settings.custom) {
       setMode("manual");
-      setManualRaw({ ...rawFromCustom(data.settings.custom) });
+      setManualRaw({ ...rawFromCustom(data.settings.custom, units) });
     } else if (data.kind === "blank") {
       const g = buildGridSpec(data.settings);
       setMode("manual");
-      setManualRaw({ ...rawFromCustom({ widthInches: g.widthInches, heightInches: g.heightInches, stitchesPerInch: g.gauge.stitchesPerInch, rowsPerInch: g.gauge.rowsPerInch }) });
+      setManualRaw({ ...rawFromCustom({ widthInches: g.widthInches, heightInches: g.heightInches, stitchesPerInch: g.gauge.stitchesPerInch, rowsPerInch: g.gauge.rowsPerInch }, units) });
       dispatch({ key: "sizeId", value: data.settings.sizeId });
     } else {
       setMode("quick");
@@ -344,6 +349,14 @@ export function SetupScreen() {
     setStatus("idle");
   }, []);
 
+  // Units only change how sizes are shown and typed, so this never touches the chart and never asks first.
+  const changeUnits = (next: UnitSystem) => {
+    if (next === units) return;
+    setManualRaw((raw) => convertRaw(raw, units, next));
+    setUnits(next);
+    saveUnits(next);
+  };
+
   const chooseMode = (next: SetupMode) => {
     if (next === mode) return;
     guard.request("Changing the size", () => {
@@ -357,7 +370,8 @@ export function SetupScreen() {
       invalidate();
       setManualRaw(next);
       try {
-        localStorage.setItem(GAUGE_KEY, JSON.stringify({ sw: next.sw, swIn: next.swIn, sh: next.sh, shIn: next.shIn }));
+        const inch = convertRaw(next, units, "imperial");
+        localStorage.setItem(GAUGE_KEY, JSON.stringify({ sw: inch.sw, swIn: inch.swIn, sh: inch.sh, shIn: inch.shIn }));
       } catch {
         /* the swatch just is not remembered */
       }
@@ -382,7 +396,7 @@ export function SetupScreen() {
   const grid = useMemo(() => buildGridSpec(settings), [settings]);
   // Crop to the finished tapestry's PHYSICAL proportions (not stitches ÷ rows).
   const aspect = physicalAspect(grid.widthInches, grid.heightInches);
-  const offerStrengthen = strengthenOffered(grid.cols);
+  const offerStrengthen = strengthenOffered(grid.cols, grid.rows);
   // A quick look at the picture: is it a drawing on light paper (where this helps most)? Worked out once per picture.
   const lineArt = useMemo(() => {
     if (!image) return null;
@@ -436,7 +450,7 @@ export function SetupScreen() {
     setRunError(null);
     try {
       let raster = bitmapToRaster(image.bitmap);
-      if (strengthenActive(strengthen, grid.cols)) {
+      if (strengthenActive(strengthen, grid.cols, grid.rows)) {
         // Widen the thin dark lines first; the converter itself is unchanged and just sees a different picture.
         await new Promise((resolve) => setTimeout(resolve, 0)); // let "Building your grid..." paint first
         raster = strengthenThinLines(raster, { cols: grid.cols, aspect }).raster;
@@ -511,9 +525,10 @@ export function SetupScreen() {
           message={projectMsg}
           storageOk={storageOk}
         />
+        <UnitToggle units={units} onChange={changeUnits} />
         {mode === "quick" && <ModeChoice mode={mode} onChange={chooseMode} />}
         {mode === "manual" && (
-          <ManualMode raw={manualRaw} onRaw={changeManual} start={start} onStart={chooseStart} onBack={() => chooseMode("quick")} />
+          <ManualMode raw={manualRaw} onRaw={changeManual} start={start} onStart={chooseStart} onBack={() => chooseMode("quick")} units={units} />
         )}
         {!scratch && (
           <UploadZone
@@ -554,12 +569,12 @@ export function SetupScreen() {
               <div>
                 <OptionGroup
                   legend="Finished tapestry size"
-                  options={sizeOptions(settings.orientation)}
+                  options={sizeOptions(settings.orientation, units)}
                   value={settings.sizeId as FinishedSizeId}
                   onChange={(v) => update("sizeId", v)}
                   columns={2}
                 />
-                <SizeSummary grid={grid} />
+                <SizeSummary grid={grid} units={units} />
               </div>
             </>
           )}
@@ -671,7 +686,7 @@ export function SetupScreen() {
       {result && (
         <div ref={barRef} className="setupbar" data-testid="setup-bar">
           <span className="setupbar__text">
-            {result.blank ? "Blank canvas" : "Your picture"} · {grid.widthInches} × {grid.heightInches} in
+            {result.blank ? "Blank canvas" : "Your picture"} · {sizeText(grid.widthInches, grid.heightInches, units)}
           </span>
           <span className="setupbar__saved" data-testid="save-status" role="status">
             {saveState === "saved" && "Saved on this device"}
@@ -702,6 +717,7 @@ export function SetupScreen() {
           initialMatrix={result.current}
           onMatrixChange={onMatrixChange}
           onBackup={saveState === "none" ? undefined : exportBackup}
+          units={units}
           progress={progress}
           onProgressChange={changeProgress}
           onEditedChange={(n, afterDownload) => {

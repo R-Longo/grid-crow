@@ -2521,3 +2521,13 @@ body {
 .manual { grid-template-columns: minmax(0, 1fr); }
 .manual__step, .manual__grid, .manual__field { min-width: 0; }
 .manual__field input { width: 100%; min-width: 0; }
+
+/* Inches / centimeters */
+.units { display: flex; justify-content: flex-end; gap: 0; margin: 0 0 var(--space-3); }
+.units__btn {
+  min-height: 44px; padding: 0 var(--space-4); background: var(--control); color: var(--text); border: 1.5px solid var(--border-strong); cursor: pointer; font-weight: 600;
+}
+.units__btn:first-child { border-radius: var(--radius-sm) 0 0 var(--radius-sm); }
+.units__btn:last-child { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; border-left: 0; }
+.units__btn[aria-pressed="true"] { background: #e8b84f; color: #17191b; border-color: #e8b84f; }
+.units__btn:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }

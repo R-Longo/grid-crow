@@ -4,6 +4,8 @@ import { FINISHED_SIZES } from "../config/sizes";
 import type { FinishedSizeId } from "../config/sizes";
 import type { MaxColors, Orientation, SetupSettings } from "../types";
 import { stitchesForSize } from "./gauge";
+import { sizeText } from "./units";
+import type { UnitSystem } from "./units";
 
 /**
  * The single description of the chart the user asked for. The setup screen displays it
@@ -82,7 +84,8 @@ export function buildGridSpec(
 }
 
 /** "12 × 16 inches" */
-export function formatFinishedSize(spec: GridSpec): string {
+export function formatFinishedSize(spec: GridSpec, units: UnitSystem = "imperial"): string {
+  if (units === "metric") return sizeText(spec.widthInches, spec.heightInches, units);
   return `${spec.widthInches} × ${spec.heightInches} inches`;
 }
 

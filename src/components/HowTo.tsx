@@ -132,7 +132,7 @@ export function HowTo() {
               For the most accurate finished size, check your gauge: {G.stitchesPerSwatch} single
               crochet stitches across and {G.rowsPerSwatch} rows high should measure{" "}
               <span className="nowrap">
-                {G.swatchInches} × {G.swatchInches} inches
+                {G.swatchInches} × {G.swatchInches} inches (about 10 × 10 cm)
               </span>{" "}
               using {YARN_TEXT} yarn and a {G.hookLabel} hook.
             </span>

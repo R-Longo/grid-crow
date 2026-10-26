@@ -1,6 +1,8 @@
 import { ROWS_PER_INCH, STANDARD_GAUGE, STITCHES_PER_INCH } from "../../config/gauge";
 import { aspectOf, describeGauge, gaugeOf, isDefaultGauge, sizeInches } from "../gauge";
 import type { StitchGauge } from "../gauge";
+import { lengthNumber, trimmed, yarnAmount, yarnShort, fromInches } from "../units";
+import type { UnitSystem } from "../units";
 import type { StitchMatrix } from "../convert/types";
 import { stitchLabel } from "../editor/coords";
 import { colorCounts } from "../editor/paint";
@@ -48,6 +50,8 @@ export interface PatternModel {
   /** The gauge this chart was made at, and the width / height of one stitch that follows from it. */
   gauge: StitchGauge;
   aspect: number;
+  /** How lengths and yarn amounts are written: inches and yards, or centimeters and meters. Counts are never affected. */
+  units: UnitSystem;
   /** Rough yarn estimate for the whole chart, in whole yards. */
   lowYards: number;
   highYards: number;
@@ -63,7 +67,7 @@ export function letterFor(n: number): string {
   return letterFor(Math.floor(n / LETTERS.length) - 1) + LETTERS[n % LETTERS.length];
 }
 
-export function buildPatternModel(matrix: StitchMatrix): PatternModel {
+export function buildPatternModel(matrix: StitchMatrix, units: UnitSystem = "imperial"): PatternModel {
   const counts = colorCounts(matrix);
   const letterOf: Array<string | null> = [];
   const colors: PatternColor[] = [];
@@ -90,21 +94,24 @@ export function buildPatternModel(matrix: StitchMatrix): PatternModel {
     ...sizeInches(matrix.cols, matrix.rows, gaugeOf(matrix)),
     gauge: gaugeOf(matrix),
     aspect: aspectOf(gaugeOf(matrix)),
+    units,
     lowYards: yarn.lowYards,
     highYards: yarn.highYards,
     inchesPerStitch: [yarn.inchesPerStitchLow, yarn.inchesPerStitchHigh],
   };
 }
 
-/** "40–60 yd" (a range, because this is an estimate), or "40 yd" when both ends agree. */
-export function yardsText(low: number, high: number): string {
-  return low === high ? `${formatCount(low)} yd` : `${formatCount(low)}–${formatCount(high)} yd`;
+/** "40–60 yd" (a range, because this is an estimate), or "40 yd" when both ends agree. Meters when the units are metric. */
+export function yardsText(low: number, high: number, units: UnitSystem = "imperial"): string {
+  const a = yarnAmount(low, units), b = yarnAmount(high, units);
+  const u = yarnShort(units);
+  return a === b ? `${formatCount(a)} ${u}` : `${formatCount(a)}–${formatCount(b)} ${u}`;
 }
 
 /** The wording printed under every color key. Plain about what the numbers are and are not. */
 export function yarnNote(m: PatternModel): string {
-  const [a, b] = m.inchesPerStitch.map((n) => String(Number(n.toFixed(1))));
-  return `Rough estimate, not a measurement: about ${a} to ${b} inches of yarn per stitch, plus carried yarn and ${Math.round(EXTRA * 100)}% extra. Yarn, hook and tension vary, so buy a bit more than the high number.`;
+  const [a, b] = m.inchesPerStitch.map((n) => trimmed(fromInches(n, m.units)));
+  return `Rough estimate, not a measurement: about ${a} to ${b} ${m.units === "metric" ? "centimeters" : "inches"} of yarn per stitch, plus carried yarn and ${Math.round(EXTRA * 100)}% extra. Yarn, hook and tension vary, so buy a bit more than the high number.`;
 }
 
 /** The number printed for column `col` (0-based, from the left; stitch 1 is the rightmost column) and for matrix row `row` (0 = top): row 1 is the bottom. */
@@ -128,15 +135,15 @@ export function sizeLine(m: PatternModel): string {
 }
 
 export function finishedLine(m: PatternModel): string {
-  return `Finished size about ${formatInches(m.widthInches)} × ${formatInches(m.heightInches)} inches`;
+  return `Finished size about ${lengthNumber(m.widthInches, m.units)} × ${lengthNumber(m.heightInches, m.units)} ${m.units === "metric" ? "cm" : "inches"}`;
 }
 
 /** "Reference gauge: 16 stitches × 18 rows per 4 inches, using worsted-weight #4 yarn and a 5 mm hook." */
-export function gaugeLine(custom?: StitchGauge): string {
-  if (custom && !isDefaultGauge(custom)) return `Gauge: ${describeGauge(custom)}, measured from your own swatch. The chart is drawn to match it.`;
+export function gaugeLine(custom?: StitchGauge, units: UnitSystem = "imperial"): string {
+  if (custom && !isDefaultGauge(custom)) return `Gauge: ${describeGauge(custom, units)}, measured from your own swatch. The chart is drawn to match it.`;
   const g = STANDARD_GAUGE;
   const yarn = g.yarnLabel.toLowerCase().replace(" weight", "-weight");
-  return `Reference gauge: ${g.stitchesPerSwatch} stitches × ${g.rowsPerSwatch} rows per ${g.swatchInches} inches, using ${yarn} yarn and a ${g.hookLabel} hook.`;
+  return `Reference gauge: ${g.stitchesPerSwatch} stitches × ${g.rowsPerSwatch} rows per ${g.swatchInches} inches${units === "metric" ? " (about 10 cm)" : ""}, using ${yarn} yarn and a ${g.hookLabel} hook.`;
 }
 
 export const NUMBERING_NOTE = "Row 1 is the bottom row. Stitch 1 is at the right. Odd rows: work right to left. Even rows: turn, work left to right.";

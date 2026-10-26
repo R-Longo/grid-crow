@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { aspectOf, gaugeOf } from "../engine/gauge";
+import type { UnitSystem } from "../engine/units";
 import { cropRect } from "../engine/convert/crop";
 import type { DecodedImage } from "../engine/convert/decode";
 import type { CropState, StitchMatrix } from "../engine/convert/types";
@@ -93,6 +94,8 @@ interface ChartViewProps {
   onMatrixChange?: (matrix: StitchMatrix, converted: StitchMatrix) => void;
   /** Extra buttons in the download panel (the project backup file). */
   onBackup?: () => void;
+  /** How lengths and yarn are written in exports and the yarn estimate. Default inches and yards. */
+  units?: UnitSystem;
   /** Stitches crocheted so far, in working order. Kept (and saved) by the page, so it travels with the project. */
   progress?: number;
   onProgressChange?: (progress: number) => void;
@@ -117,6 +120,7 @@ export function ChartView({
   initialMatrix,
   onMatrixChange,
   onBackup,
+  units = "imperial",
   progress = 0,
   onProgressChange,
 }: ChartViewProps) {
@@ -733,7 +737,7 @@ export function ChartView({
       // The chart as it is when the export starts: this is what the file contains, and what counts as downloaded.
       const exportSession = sessionRef.current!;
       const snapshot = exportSession.matrix;
-      const model = buildPatternModel(snapshot);
+      const model = buildPatternModel(snapshot, units);
       const name = patternFileName(model, "png");
       const blob = await renderPatternPng(model, { letters: downloadChoices.pngLetters });
       if (!downloadBlob(blob, name)) throw new Error("The browser did not start the download.");
@@ -755,7 +759,7 @@ export function ChartView({
     try {
       const exportSession = sessionRef.current!;
       const snapshot = exportSession.matrix;
-      const model = buildPatternModel(snapshot);
+      const model = buildPatternModel(snapshot, units);
       const layoutKind = downloadChoices.pdfLayout;
       const name = patternFileName(model, "pdf", layoutKind === "tiled" ? "large-print" : layoutKind === "compact" ? "compact" : "");
       const blob = await renderPatternPdf(model, {
@@ -1338,7 +1342,7 @@ export function ChartView({
               {viewToggle && <div className="chart__options-row">{viewToggle}</div>}
               {colorEditor && <div className="chart__options-row">{colorEditor}</div>}
               <div className="chart__options-row">
-                <YarnEstimate matrix={matrix} />
+                <YarnEstimate matrix={matrix} units={units} />
               </div>
               <div className="chart__options-row">{gridCheck}</div>
               <div className="chart__options-row chart__zoombar chart__zoom">{zoomControls}</div>
@@ -1412,7 +1416,7 @@ export function ChartView({
             </h3>
             {palette}
             {colorEditor}
-            <YarnEstimate matrix={matrix} />
+            <YarnEstimate matrix={matrix} units={units} />
           </div>
           <div className="chart__downloads">
             <h3 className="chart__heading" id={downloadId}>
