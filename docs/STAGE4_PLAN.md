@@ -253,3 +253,10 @@ Once a chart opens, the editor is a workspace the height of the screen (under th
 - My projects shows a small picture of each chart (`ProjectThumb`, one pixel per stitch, drawn from the stored current chart).
 - After a successful save the app asks the browser to keep its saved data (`navigator.storage.persist`). Browsers may refuse, so the list says plainly to save a backup file of anything important.
 - Footer: "Your pictures and projects stay on your device." plus a "Share feedback" link. The link shows only when `FEEDBACK_URL` in `src/config/links.ts` is set (paste the Discord invite there).
+
+## 23. Add text tool
+
+- `src/engine/text/fonts.ts`: two hand-built stitch fonts (Standard 5×7, Small 3×5): capitals, digits, `. , ! ? - : ' & + / ( )`. Lowercase prints as capitals; unsupported characters show as `?`. Size is a whole-number scale (×1–×4); Bold smears each letter one stitch; up to 4 lines, 60 characters. Words wrap to the chart width automatically.
+- Text tool (Text button next to Pan): type, tap the chart to centre the lettering there, nudge with arrows, **Add to chart** stamps it in the selected yarn color as ONE undo step (`EditorSession.placeStitches`). While the panel is open the chart is for placing only (no painting). Text bigger than the chart is refused with a message.
+- Tests: `fonts.test.ts`, e2e `text_browser.py`.
+- Next: warn at conversion when text in the picture is too small to survive; optional text-protecting converter mode.

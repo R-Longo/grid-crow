@@ -198,6 +198,16 @@ export class EditorSession {
     return indexes.map((i) => ({ col: i % cols, row: (i / cols) | 0 }));
   }
 
+  /** Stamp stitches (e.g. lettering) in one color as a single undo step. Anything off the chart is ignored. */
+  placeStitches(stitches: Stitch[], color: number): SessionEffect[] {
+    if (this.busy) return [];
+    const before = this.matrix;
+    const r = paintStitches(this.matrix, stitches, color);
+    if (r.changed.length === 0) return [];
+    this.matrix = r.matrix;
+    return [{ type: "repaint", stitches: r.changed }, ...this.commit("paint", r.changed, before)];
+  }
+
   /** Record a finished action as one undo step. */
   private commit(label: "paint" | "fill", changed: Array<number | Stitch>, before: StitchMatrix): SessionEffect[] {
     const edit = makeEdit(label, changed, before, this.matrix);

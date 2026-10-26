@@ -27,6 +27,8 @@ import { Icon } from "./Icon";
 import { Rulers, RULER_H, gutterWidth } from "./Rulers";
 import { directionLabel } from "../engine/editor/rulers";
 import type { IconName } from "./Icon";
+import { centeredOn, clampPlacement, maskStitches, renderText, wrapToWidth, MAX_TEXT_LENGTH } from "../engine/text/fonts";
+import type { FontId } from "../engine/text/fonts";
 import { ColorEditor } from "./ColorEditor";
 import { ConfirmReset } from "./ConfirmReset";
 import { BLANK_BACKGROUND_SLOT } from "../engine/blank";
@@ -167,6 +169,26 @@ export function ChartView({
   progressRef.current = progress;
   const [active, setActive] = useState(startColor);
   const [tool, setTool] = useState<Tool>("paint");
+  // Add text: while the panel is open the chart is for placing the lettering, not painting.
+  const [textOpen, setTextOpen] = useState(false);
+  const [textValue, setTextValue] = useState("");
+  const [textFont, setTextFont] = useState<FontId>("standard");
+  const [textScale, setTextScale] = useState(1);
+  const [textBold, setTextBold] = useState(false);
+  const [textPos, setTextPos] = useState<{ col: number; row: number } | null>(null);
+  const textRef = useRef<HTMLCanvasElement>(null);
+  const textOpenRef = useRef(false);
+  textOpenRef.current = textOpen;
+  const textMask = useMemo(
+    () => {
+      const style = { font: textFont, scale: textScale, bold: textBold };
+      // Words that do not fit across the chart drop to the next line by themselves.
+      return renderText(wrapToWidth(textValue, style, converted.cols), style);
+    },
+    [textValue, textFont, textScale, textBold, converted.cols],
+  );
+  const textMaskRef = useRef(textMask);
+  textMaskRef.current = textMask;
   const [hover, setHover] = useState<Stitch | null>(null);
   const [matrix, setMatrix] = useState<StitchMatrix>(initialMatrix ?? converted);
   const [changed, setChanged] = useState(0);
@@ -187,7 +209,7 @@ export function ChartView({
   if (!sessionRef.current || sessionRef.current.converted !== converted)
     sessionRef.current = newSession(converted, startColor, initialMatrix);
   const session = sessionRef.current;
-  session.mode = tracking ? "pan" : mode;
+  session.mode = tracking || textOpen ? "pan" : mode;
   session.tool = tool;
   const viewRef = useRef(view);
   const zoomRef = useRef(1);
@@ -328,6 +350,54 @@ export function ChartView({
       ctx.strokeRect(bx, by, bwid, bhei);
     }
   }, [tracking, progress, matrix.cols, matrix.rows, cellW, cellH, pxW, pxH, compact, drawVersion]);
+
+  // Add text: the lettering being placed, drawn over the chart in the active yarn color with a dashed frame.
+  const textStart = textMask ? textPos ?? centeredOn(textMask, Math.floor(matrix.cols / 2), Math.floor(matrix.rows / 2)) : null;
+  const placed = textMask && textStart ? clampPlacement(textMask, textStart.col, textStart.row, matrix.cols, matrix.rows) : null;
+  const textTooBig = !!textMask && (textMask.width > matrix.cols || textMask.height > matrix.rows);
+  useEffect(() => {
+    const el = textRef.current;
+    if (!el || pxW === 0) return;
+    el.width = pxW;
+    el.height = pxH;
+    const ctx = el.getContext("2d");
+    if (!ctx) return;
+    ctx.clearRect(0, 0, pxW, pxH);
+    if (!textOpen || !textMask || !placed) return;
+    const x = (c: number) => cellEdge(c, cellW);
+    const y = (r: number) => cellEdge(r, cellH);
+    ctx.fillStyle = activeColor.hex;
+    for (const st of maskStitches(textMask, placed.col, placed.row))
+      ctx.fillRect(x(st.col), y(st.row), x(st.col + 1) - x(st.col), y(st.row + 1) - y(st.row));
+    const fx = x(placed.col), fy = y(placed.row);
+    const fw = x(placed.col + textMask.width) - fx, fh = y(placed.row + textMask.height) - fy;
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = "#111111";
+    ctx.setLineDash([]);
+    ctx.strokeRect(fx - 1.5, fy - 1.5, fw + 3, fh + 3);
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = "#e8b84f";
+    ctx.setLineDash([6, 4]);
+    ctx.strokeRect(fx - 1.5, fy - 1.5, fw + 3, fh + 3);
+  }, [textOpen, textMask, placed?.col, placed?.row, active, matrix.palette, cellW, cellH, pxW, pxH, compact, drawVersion]);
+
+  const nudgeText = (dc: number, dr: number) => {
+    if (!textMask) return;
+    if (!placed) return;
+    setTextPos({ col: placed.col + dc, row: placed.row + dr });
+  };
+  const addText = () => {
+    if (!textMask || !placed) return;
+    const at = placed;
+    const effects = sessionRef.current!.placeStitches(maskStitches(textMask, at.col, at.row), active);
+    applyEffects(effects);
+    setNote(effects.length ? `Added your text in ${activeColor.hex.toUpperCase()}. Undo takes it back.` : "Nothing changed: that spot is already that color.");
+    if (effects.length) {
+      setTextOpen(false);
+      setTextValue("");
+      setTextPos(null);
+    }
+  };
 
   // Keep the row being worked in view when it moves.
   useEffect(() => {
@@ -526,7 +596,7 @@ export function ChartView({
 
   const onPointerDown = (e: React.PointerEvent) => {
     if (viewRef.current !== "chart") return;
-    if (trackingRef.current) {
+    if (trackingRef.current || textOpenRef.current) {
       // A tap marks a stitch; a drag or a second finger is moving around instead.
       tapRef.current = tapRef.current ? { ...tapRef.current, moved: true } : { id: e.pointerId, x: e.clientX, y: e.clientY, moved: false };
     }
@@ -552,7 +622,11 @@ export function ChartView({
     const tap = tapRef.current;
     if (tap && tap.id === e.pointerId) {
       tapRef.current = null;
-      if (!tap.moved && trackingRef.current) {
+      if (!tap.moved && textOpenRef.current && !trackingRef.current) {
+        const st = stitchAt(e.clientX, e.clientY);
+        const mk = textMaskRef.current;
+        if (st) setTextPos(mk ? centeredOn(mk, st.col, st.row) : { col: st.col, row: st.row });
+      } else if (!tap.moved && trackingRef.current) {
         const st = stitchAt(e.clientX, e.clientY);
         if (st) {
           const after = progressAfterTap(st.col, st.row, matrix.cols, matrix.rows);
@@ -746,15 +820,20 @@ export function ChartView({
   const activeColor = matrix.palette[active] ?? matrix.palette[0];
   const label = hover ? stitchLabel(hover, matrix.rows, matrix.cols) : null;
 
-  const TOOLS: Array<{ id: Tool | "pan"; label: string; short: string; icon: IconName }> = [
+  const TOOLS: Array<{ id: Tool | "pan" | "text"; label: string; short: string; icon: IconName }> = [
     { id: "paint", label: "Paint", short: "Paint", icon: "pencil" },
     { id: "fill", label: "Fill", short: "Fill", icon: "fill" },
     { id: "pick", label: "Eyedropper", short: "Pick", icon: "dropper" },
+    { id: "text", label: "Text", short: "Text", icon: "text" },
     { id: "pan", label: "Pan", short: "Pan", icon: "hand" },
   ];
-  const selectedTool: Tool | "pan" = mode === "pan" ? "pan" : tool;
-  const chooseTool = (id: Tool | "pan") => {
-    if (id === "pan") setMode("pan");
+  const selectedTool: Tool | "pan" | "text" = textOpen ? "text" : mode === "pan" ? "pan" : tool;
+  const chooseTool = (id: Tool | "pan" | "text") => {
+    setTextOpen(id === "text");
+    if (id === "text") {
+      setMode("draw");
+      setNote("");
+    } else if (id === "pan") setMode("pan");
     else {
       setMode("draw");
       setTool(id);
@@ -763,7 +842,9 @@ export function ChartView({
   const help =
     view !== "chart"
       ? "This is your original picture, for comparing. Switch back to Chart to edit."
-      : selectedTool === "paint"
+      : selectedTool === "text"
+        ? "Type your words, tap the chart to place them, then Add to chart."
+        : selectedTool === "paint"
         ? "Tap or drag to paint with the selected color."
         : selectedTool === "fill"
           ? "Tap a region to fill all its connected stitches."
@@ -929,7 +1010,64 @@ export function ChartView({
       <p className="track__hint">Tap a stitch to mark everything up to it. Tap the last marked stitch again to take it back.</p>
     </div>
   );
-  const status = tracking ? trackBar : editStatus;
+  const textPanel = (
+    <div className="textpanel" data-testid="text-panel">
+      <label className="textpanel__field">
+        <span>Your words</span>
+        <textarea
+          data-testid="text-input"
+          rows={2}
+          maxLength={MAX_TEXT_LENGTH}
+          value={textValue}
+          placeholder="Type here, e.g. HELLO"
+          onChange={(e) => setTextValue(e.target.value)}
+        />
+      </label>
+      <div className="textpanel__row" role="group" aria-label="Letter style">
+        <button type="button" className="chart__small" aria-pressed={textFont === "standard"} data-testid="text-font-standard" onClick={() => setTextFont("standard")}>
+          Standard 5×7
+        </button>
+        <button type="button" className="chart__small" aria-pressed={textFont === "mini"} data-testid="text-font-mini" onClick={() => setTextFont("mini")}>
+          Small 3×5
+        </button>
+        <button type="button" className="chart__small" aria-pressed={textBold} data-testid="text-bold" onClick={() => setTextBold((b) => !b)}>
+          Bold
+        </button>
+        <button type="button" className="chart__small" data-testid="text-smaller" disabled={textScale <= 1} aria-label="Smaller letters" onClick={() => setTextScale((n) => Math.max(1, n - 1))}>
+          −
+        </button>
+        <span className="textpanel__size" data-testid="text-size">Size ×{textScale}</span>
+        <button type="button" className="chart__small" data-testid="text-bigger" disabled={textScale >= 4} aria-label="Bigger letters" onClick={() => setTextScale((n) => Math.min(4, n + 1))}>
+          +
+        </button>
+      </div>
+      <p className="textpanel__info" role="status" data-testid="text-info">
+        {!textMask
+          ? "Type something to see it on the chart."
+          : textTooBig
+            ? `That is ${textMask.width} × ${textMask.height} stitches, bigger than the chart. Try fewer letters, a smaller size, or two lines.`
+            : `${textMask.width} stitches wide × ${textMask.height} rows tall.${
+                textMask.substituted ? " Some characters can't be stitched and show as ?." : ""
+              } Tap the chart to move it, or use the arrows.`}
+      </p>
+      <div className="textpanel__row">
+        <button type="button" className="chart__small" data-testid="text-left" aria-label="Move left" disabled={!textMask || textTooBig} onClick={() => nudgeText(-1, 0)}>←</button>
+        <button type="button" className="chart__small" data-testid="text-up" aria-label="Move up" disabled={!textMask || textTooBig} onClick={() => nudgeText(0, -1)}>↑</button>
+        <button type="button" className="chart__small" data-testid="text-down" aria-label="Move down" disabled={!textMask || textTooBig} onClick={() => nudgeText(0, 1)}>↓</button>
+        <button type="button" className="chart__small" data-testid="text-right" aria-label="Move right" disabled={!textMask || textTooBig} onClick={() => nudgeText(1, 0)}>→</button>
+        <button type="button" className="chart__small track__next" data-testid="text-add" disabled={!textMask || textTooBig} onClick={addText}>
+          Add to chart
+        </button>
+        <button type="button" className="chart__small" data-testid="text-cancel" onClick={() => { setTextOpen(false); setTextPos(null); }}>
+          Cancel
+        </button>
+      </div>
+      <p className="track__hint">
+        Letters are stitched in the color you have selected ({activeColor.hex.toUpperCase()}). Lowercase shows as capitals.
+      </p>
+    </div>
+  );
+  const status = tracking ? trackBar : textOpen ? textPanel : editStatus;
   const modeButton = (
     <button
       type="button"
@@ -986,7 +1124,7 @@ export function ChartView({
         >
           <div
             ref={stageRef}
-            className={`chart__stage${view === "chart" ? ` chart__stage--${tracking ? "pan" : mode}${!tracking && mode === "draw" && tool !== "paint" ? ` chart__stage--${tool}` : ""}` : ""}`}
+            className={`chart__stage${view === "chart" ? ` chart__stage--${tracking || textOpen ? "pan" : mode}${!tracking && !textOpen && mode === "draw" && tool !== "paint" ? ` chart__stage--${tool}` : ""}` : ""}`}
             style={{ width: pxW || undefined, height: pxH || undefined }}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
@@ -1012,6 +1150,7 @@ export function ChartView({
               data-testid="chart-canvas"
             />
             <canvas ref={linesRef} className="chart__lines" aria-hidden="true" hidden={view !== "chart"} />
+            <canvas ref={textRef} className="chart__lines" aria-hidden="true" data-testid="text-canvas" hidden={view !== "chart" || !textOpen} />
             <canvas ref={trackRef} className="chart__lines" aria-hidden="true" data-testid="track-canvas" hidden={view !== "chart" || !tracking} />
             <canvas
               ref={originalRef}

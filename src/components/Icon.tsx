@@ -14,6 +14,7 @@ export type IconName =
   | "fill"
   | "dropper"
   | "hand"
+  | "text"
   | "undo"
   | "redo"
   | "reset"
@@ -76,6 +77,13 @@ const PATHS: Record<string, ReactNode> = {
   dropper: (
     <>
       <path d="M14 6l4 4M16 4l4 4-2 2-4-4 2-2zM13 7l-8 8-1 4 4-1 8-8" />
+    </>
+  ),
+  text: (
+    <>
+      <path d="M5 6V4h14v2" />
+      <path d="M12 4v16" />
+      <path d="M9 20h6" />
     </>
   ),
   hand: (

@@ -1904,7 +1904,7 @@ legend {
 
 .chart__dockbar {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr)) 8px repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr)) 8px repeat(2, minmax(0, 1fr));
   gap: 4px;
 }
 
@@ -2004,7 +2004,7 @@ legend {
     flex: none;
   }
   .chart--side .chart__dockbar {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
   .chart--side .chart__dockgap {
     display: none;
@@ -2444,3 +2444,15 @@ body {
 .projects__item { align-items: center; }
 .footer { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; justify-content: center; margin-top: var(--space-4); padding-top: var(--space-3); border-top: 1px solid var(--border); font-size: 0.8125rem; color: var(--text-muted); text-align: center; }
 .footer a { color: #e8b84f; font-weight: 600; }
+
+/* Add text */
+.textpanel { display: flex; flex-direction: column; gap: 0.5rem; margin: var(--space-2) 0; }
+.textpanel__field { display: flex; flex-direction: column; gap: 0.25rem; font-weight: 600; }
+.textpanel__field textarea {
+  font: inherit; padding: 0.5rem; border-radius: 0.5rem; border: 2px solid currentColor;
+  background: #fff; color: #1a1a1a; resize: vertical; min-height: 2.75rem;
+}
+.textpanel__row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.textpanel__row .chart__small[aria-pressed="true"] { outline: 3px solid #e8b84f; outline-offset: 1px; }
+.textpanel__size { font-weight: 600; min-width: 4.5rem; text-align: center; }
+.textpanel__info { margin: 0; font-size: 0.875rem; }

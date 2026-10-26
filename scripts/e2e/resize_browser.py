@@ -11,7 +11,7 @@ def check(n, c, d=""):
 JS = """() => {
   const r = s => { const e = document.querySelector(s); if (!e) return null; const b = e.getBoundingClientRect(); return {l:b.left,t:b.top,r:b.right,b:b.bottom,w:b.width,h:b.height}; };
   const sc = document.querySelector('.chart__scroll');
-  const reach = n => { const b = [...document.querySelectorAll('.chart button')].find(e => (e.getAttribute('aria-label')||e.textContent).trim().startsWith(n)); if (!b) return false; const bb = b.getBoundingClientRect(); return bb.top >= -1 && bb.bottom <= innerHeight + 1 && bb.left >= -1 && bb.right <= innerWidth + 1; };
+  const reach = n => { const b = [...document.querySelectorAll('.chart button')].find(e => (e.getAttribute('aria-label')||e.textContent).trim() === n || (e.getAttribute('aria-label')||e.textContent).trim().startsWith(n) && !(e.getAttribute('aria-label')||'').includes(' with ')); if (!b) return false; const bb = b.getBoundingClientRect(); return bb.top >= -1 && bb.bottom <= innerHeight + 1 && bb.left >= -1 && bb.right <= innerWidth + 1; };
   const z = document.querySelector('.chart__zoom input');
   return { cv: r('[data-testid=chart-canvas]'), box: r('.chart__scroll'), rt: r('.chart__ruler--top'), rl: r('.chart__ruler--left'), chart: r('.chart'),
     sl: sc.scrollLeft, st: sc.scrollTop, maxL: sc.scrollWidth - sc.clientWidth, maxT: sc.scrollHeight - sc.clientHeight, scrollW: sc.scrollWidth, clientW: sc.clientWidth, scrollH: sc.scrollHeight, clientH: sc.clientHeight,

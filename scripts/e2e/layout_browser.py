@@ -39,7 +39,7 @@ def run(p):
                 tools: [...document.querySelectorAll('.chart__dockbar button')].map(b => b.getAttribute('aria-label') || b.textContent.trim()), dockPos: getComputedStyle(document.querySelector('.chart__dock')).position,
                 optionsHidden: !vis('.chart__toggle') && !vis('.chart__check') && !vis('.chart__edit') && !vis('.chart__help'), ih: innerHeight }; }""")
             check(f"{tag}: compact: the chart (and its 20px stitch-number ruler) comes first, right under a one-row header", D["box"]["t"] - D["bar"]["b"] < 20 + 20 and D["bar"]["h"] < 70, f"header {D['bar']['h']:.0f}px, gap {D['box']['t']-D['bar']['b']:.0f}")
-            check(f"{tag}: compact: the dock has Paint, Fill, Eyedropper, Pan, Undo, Redo", D["tools"] == ["Paint", "Fill", "Eyedropper", "Pan", "Undo", "Redo"], str(D["tools"]))
+            check(f"{tag}: compact: the dock has Paint, Fill, Eyedropper, Text, Pan, Undo, Redo", D["tools"] == ["Paint", "Fill", "Eyedropper", "Text", "Pan", "Undo", "Redo"], str(D["tools"]))
             check(f"{tag}: compact: phone: yarn colors in a one-row strip above the tools (rail layouts put tools first)", w >= 576 or (D["strip"]["b"] <= D["dockbar"]["t"] + 1 and D["strip"]["h"] < 90))
             if w >= 576:   # a phone held sideways or a small tablet: a slim rail of tools and colors beside the chart
                 check(f"{tag}: sideways phone: dock is a column to the right of the chart, everything on one screen", D["dock"]["l"] >= D["box"]["r"] - 1 and D["dock"]["r"] <= L["iw"] + 1 and D["box"]["t"] >= -2 and D["box"]["b"] <= D["ih"] + 2 and D["status"]["b"] <= D["ih"] + 2,
