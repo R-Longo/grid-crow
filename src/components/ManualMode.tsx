@@ -28,7 +28,7 @@ export function ManualMode({ raw, onRaw, start, onStart, onBack }: ManualModePro
   return (
     <section className="manual" data-testid="manual-page" aria-label="Manual Mode">
       <button type="button" className="manual__back" data-testid="manual-back" onClick={onBack}>
-        <span aria-hidden="true">‹</span> Back to Quick Start
+        <span aria-hidden="true">‹</span> Back to home
       </button>
       <h2 className="manual__title">Manual Mode</h2>
       <p className="manual__lead">Make a chart to your own measurements.</p>

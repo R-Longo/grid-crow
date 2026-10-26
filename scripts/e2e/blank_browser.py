@@ -1,6 +1,7 @@
 """Blank Canvas (Start from Scratch) real-browser checks, desktop and phone (emulated touch).
 Needs the dev server (npx vite --port 5173 --host 127.0.0.1); reads the real PNG / PDF downloads (qpdf, pdftotext, pdfinfo).
   python3 blank_browser.py [desktop|mobile]"""
+from _blank import start_blank
 import os, re, subprocess, sys, time
 from playwright.sync_api import sync_playwright
 
@@ -103,16 +104,17 @@ def scenario(page, tag, cdp=None):
     touch = cdp is not None
     errors = []; page.on("pageerror", lambda e: errors.append(str(e)))
     page.goto(URL); page.wait_for_load_state("networkidle")
-    cards = page.locator(".start__card")
-    check(f"{tag}: two clearly named starting choices", cards.count() == 2 and "Convert an Image" in cards.nth(0).inner_text() and "Draw from Scratch" in cards.nth(1).inner_text())
-    check(f"{tag}: both cards are at least 44px tall", all(cards.nth(i).bounding_box()["height"] >= 44 for i in range(2)))
+    tiles = page.locator(".mode__tile")
+    check(f"{tag}: two clearly named starting choices", tiles.count() == 2 and "Quick Start" in tiles.nth(0).inner_text() and "Manual Mode" in tiles.nth(1).inner_text())
+    check(f"{tag}: both tiles are at least 44px tall", all(tiles.nth(i).bounding_box()["height"] >= 44 for i in range(2)))
+    check(f"{tag}: Quick Start has no draw-from-scratch buttons (drawing lives in Manual Mode)", page.get_by_text("Draw from Scratch").count() == 0)
     check(f"{tag}: the picture workflow is the unchanged default (upload area, colors, Create button)", page.locator("input[type=file]:not([data-testid=import-backup])").count() == 1 and page.get_by_role("button", name=re.compile("Create My Crochet Grid")).count() == 1 and page.get_by_text("Maximum yarn colors").count() == 1)
-    cards.nth(1).click(); time.sleep(0.3)
-    check(f"{tag}: Start from Scratch hides upload and color limit, keeps orientation and size", page.locator("input[type=file]:not([data-testid=import-backup])").count() == 0 and page.get_by_text("Maximum yarn colors").count() == 0 and page.get_by_text("Finished tapestry size").count() == 1 and page.get_by_text("Orientation").count() >= 1)
+    start_blank(page); time.sleep(0.3)
+    check(f"{tag}: a blank canvas in Manual Mode hides upload and color limit, and shows the size steps", page.locator("input[type=file]:not([data-testid=import-backup])").count() == 0 and page.get_by_text("Maximum yarn colors").count() == 0 and page.locator("[data-testid=manual-page]").is_visible())
     check(f"{tag}: the Open Blank Canvas button is there", page.locator("[data-testid=open-blank]").is_visible())
 
     # --- a blank 12x16 portrait: 48 x 72
-    radio(page, "12x16"); open_blank(page)
+    open_blank(page)
     cols, rows = 48, 72
     d = grid_dims(page)
     check(f"{tag}: opens a 48 x 72 chart with 10 yarn colors", d == (48, 72, 10), str(d))
@@ -197,12 +199,12 @@ def scenario(page, tag, cdp=None):
 
     # --- switching workflow asks before discarding a design
     swatch(page, 1).click(); tool(page, "Paint"); tap(page, cdp, 5, 5, cols, rows)
-    unfold(page); page.locator("[data-testid=start-image]").click(force=True); time.sleep(0.4)  # the app asks first, so the card stays on Scratch until answered
+    unfold(page); page.locator("[data-testid=manual-start-image]").click(force=True); time.sleep(0.4)  # the app asks first, so the card stays on Scratch until answered
     d = dlg(page)
     check(f"{tag}: switching to Convert an Image with a drawing asks first", d.count() == 1 and has_chart(page), d.inner_text()[:120] if d.count() else "")
     page.get_by_role("button", name="Keep editing").tap() if touch else page.get_by_role("button", name="Keep editing").click(); time.sleep(0.3)
-    check(f"{tag}: Keep editing leaves the drawing", has_chart(page) and page.locator("[data-testid=start-scratch]").is_checked())
-    radio(page, "16x20"); time.sleep(0.3)
+    check(f"{tag}: Keep editing leaves the drawing", has_chart(page) and page.locator("[data-testid=manual-start-scratch]").is_checked())
+    unfold(page); page.locator("[data-testid=manual-w]").fill("16"); time.sleep(0.3)
     check(f"{tag}: changing the size with a drawing asks first too", dlg(page).count() == 1 and has_chart(page))
     page.get_by_role("button", name="Keep editing").tap() if touch else page.get_by_role("button", name="Keep editing").click(); time.sleep(0.3)
     prompts = []
@@ -214,11 +216,11 @@ def scenario(page, tag, cdp=None):
 
     # --- landscape and the largest size
     page.goto(URL); page.wait_for_load_state("networkidle")
-    page.locator(".start__card").nth(1).click(); radio(page, "landscape"); radio(page, "24x32"); open_blank(page)
+    start_blank(page, "32", "24"); open_blank(page)
     d = grid_dims(page)
     check(f"{tag}: landscape 24 x 32 is 128 x 96?  (32 x 24 in at the gauge: 128 x 108)", d == (128, 108, 10), str(d))
     page.goto(URL); page.wait_for_load_state("networkidle")
-    page.locator(".start__card").nth(1).click(); radio(page, "portrait"); radio(page, "24x32"); open_blank(page)
+    start_blank(page, "24", "32"); open_blank(page)
     check(f"{tag}: 24 x 32 portrait is 96 x 144", grid_dims(page) == (96, 144, 10), str(grid_dims(page)))
     # --- the picture workflow still works unchanged
     page.goto(URL); page.wait_for_load_state("networkidle"); page.set_input_files("input[type=file]:not([data-testid=import-backup])", IMG); time.sleep(0.8)

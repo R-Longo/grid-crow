@@ -1,4 +1,5 @@
 """Phase 3: live resizing, rotation, odd window sizes (installed-app windows), zoomed-in state, mid-stroke resize."""
+from _blank import start_blank
 import random, re, time
 from playwright.sync_api import sync_playwright
 URL = "http://127.0.0.1:5173/"
@@ -18,8 +19,8 @@ JS = """() => {
     sw: document.documentElement.scrollWidth, iw: innerWidth, ih: innerHeight, paint: reach('Paint'), undo: reach('Undo'), zoomVal: z ? parseFloat(z.value) : null, zoomMin: z ? parseFloat(z.min) : null }; }"""
 
 def open_chart(page):
-    page.goto(URL); page.wait_for_load_state("networkidle"); page.wait_for_selector("[data-testid=start-scratch]")
-    page.locator("[data-testid=start-scratch]").click(force=True); time.sleep(0.4)
+    page.goto(URL); page.wait_for_load_state("networkidle"); page.wait_for_selector("[data-testid=mode-manual-choice]", state="attached")
+    start_blank(page); time.sleep(0.4)
     page.locator("[data-testid=open-blank]").click(); page.wait_for_selector("[data-testid=chart-canvas]", state="visible"); time.sleep(0.9)
 
 def look(page):

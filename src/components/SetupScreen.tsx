@@ -238,6 +238,11 @@ export function SetupScreen() {
     if (data.settings.sizeId === "custom" && data.settings.custom) {
       setMode("manual");
       setManualRaw({ ...rawFromCustom(data.settings.custom) });
+    } else if (data.kind === "blank") {
+      const g = buildGridSpec(data.settings);
+      setMode("manual");
+      setManualRaw({ ...rawFromCustom({ widthInches: g.widthInches, heightInches: g.heightInches, stitchesPerInch: g.gauge.stitchesPerInch, rowsPerInch: g.gauge.rowsPerInch }) });
+      dispatch({ key: "sizeId", value: data.settings.sizeId });
     } else {
       setMode("quick");
       dispatch({ key: "sizeId", value: data.settings.sizeId });
@@ -344,6 +349,7 @@ export function SetupScreen() {
     guard.request("Changing the size", () => {
       invalidate();
       setMode(next);
+      if (next === "quick") setStart("image");
     });
   };
   const changeManual = (next: ManualRaw) => {
@@ -465,7 +471,8 @@ export function SetupScreen() {
       setStart(next);
     });
   };
-  const scratch = start === "scratch";
+  // Drawing from scratch lives in Manual Mode; Quick Start is pictures and preset sizes.
+  const scratch = mode === "manual" && start === "scratch";
 
   // A new chart folds the setup away and brings the editor to the top of the screen; no chart, setup open.
   const hasResult = result !== null;
@@ -504,35 +511,10 @@ export function SetupScreen() {
           message={projectMsg}
           storageOk={storageOk}
         />
-        <ModeChoice mode={mode} onChange={chooseMode} />
+        {mode === "quick" && <ModeChoice mode={mode} onChange={chooseMode} />}
         {mode === "manual" && (
           <ManualMode raw={manualRaw} onRaw={changeManual} start={start} onStart={chooseStart} onBack={() => chooseMode("quick")} />
         )}
-        <fieldset className="start" hidden={mode === "manual"}>
-          <legend>Convert a picture, or draw from scratch?</legend>
-          <div className="start__cards">
-            {(
-              [
-                { id: "image", title: "Convert an Image", icon: "image" },
-                { id: "scratch", title: "Draw from Scratch", icon: "pencil" },
-              ] as const
-            ).map((c) => (
-              <label className="start__card" key={c.id}>
-                <input
-                  type="radio"
-                  name="start"
-                  value={c.id}
-                  data-testid={`start-${c.id}`}
-                  checked={start === c.id}
-                  onChange={() => chooseStart(c.id)}
-                />
-                <Icon name={c.icon} size={20} />
-                <span className="start__title">{c.title}</span>
-              </label>
-            ))}
-          </div>
-        </fieldset>
-
         {!scratch && (
           <UploadZone
             file={file}
@@ -559,7 +541,6 @@ export function SetupScreen() {
             }
           />
         )}
-
         <div className="fields">
           {mode === "quick" && (
             <>

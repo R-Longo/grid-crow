@@ -1,6 +1,7 @@
 """Rulers, row/column highlight and direction status: real-browser checks on desktop and phone (emulated touch).
 Blank Canvas and a converted chart. Needs the dev server (npx vite --port 5173 --host 127.0.0.1).
   python3 rulers_browser.py [desktop|mobile]"""
+from _blank import start_blank
 import sys, time
 from playwright.sync_api import sync_playwright
 import blank_browser as b
@@ -36,9 +37,8 @@ def aligned(page, cols, rows, tag):
 
 def scenario(page, tag, cdp=None):
     errors = []; page.on("pageerror", lambda e: errors.append(str(e)))
-    page.goto(b.URL); page.wait_for_selector("[data-testid=start-scratch]", state="attached", timeout=30000)
-    b.radio(page, "start-scratch") if False else page.locator("[data-testid=start-scratch]").click(force=True)
-    b.radio(page, "24x32"); time.sleep(0.3)
+    page.goto(b.URL); page.wait_for_selector("[data-testid=mode-manual-choice]", state="attached", timeout=30000)
+    start_blank(page, "24", "32"); time.sleep(0.3)
     b.open_blank(page)
     cols, rows = b.grid_dims(page)[:2]
     check(f"{tag}: blank canvas is {cols}x{rows}", (cols, rows) in [(96, 144), (144, 96), (128, 108)], f"{cols}x{rows}")

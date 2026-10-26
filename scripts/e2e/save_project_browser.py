@@ -1,4 +1,5 @@
 """Save/reopen: autosave to this device, My projects list, rename/delete, backup export/import, bad files."""
+from _blank import start_blank
 import json, re, sys, time
 from playwright.sync_api import sync_playwright
 URL = "http://127.0.0.1:5173/"; IMG = "/tmp/claude-0/scratch/imgs/hand_line.png"
@@ -86,7 +87,7 @@ def run(p):
         check(f"bad file ({label}) shows a friendly message", page.locator("[data-testid=projects-message]").count() == 1 and len(page.locator("[data-testid=projects-message]").inner_text()) > 10)
     # blank canvas project
     page.goto(URL); page.wait_for_load_state("networkidle"); time.sleep(0.5)
-    page.locator("[data-testid=start-scratch]").click(force=True); time.sleep(0.3)
+    start_blank(page); time.sleep(0.3)
     page.locator("[data-testid=open-blank]").click()
     page.wait_for_selector("[data-testid=chart-canvas]", state="visible", timeout=30000); time.sleep(0.6)
     paint_center(page); saved(page)

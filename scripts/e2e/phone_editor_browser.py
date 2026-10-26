@@ -1,5 +1,6 @@
 """Phase 2 (phone editor): setup folds into a bar, canvas size, 44 px targets, fit after rotation, desktop unchanged.
 Needs the dev server. python3 phone_editor_browser.py"""
+from _blank import start_blank
 import sys, time
 from playwright.sync_api import sync_playwright
 import blank_browser as b
@@ -11,8 +12,8 @@ def whole(page): return page.evaluate("() => { const s=document.querySelector('.
 def phone(p):
     br = p.chromium.launch(); ctx = br.new_context(viewport={"width": 390, "height": 844}, has_touch=True, is_mobile=True, device_scale_factor=2); page = ctx.new_page()
     errors = []; page.on("pageerror", lambda e: errors.append(str(e)))
-    page.goto(b.URL); page.wait_for_selector(".start__card")
-    page.locator("[data-testid=start-scratch]").click(force=True); b.radio(page, "12x16")
+    page.goto(b.URL); page.wait_for_selector("[data-testid=mode-manual-choice]", state="attached")
+    start_blank(page)
     page.locator("[data-testid=open-blank]").tap(); page.wait_for_selector("[data-testid=chart-canvas]", state="visible"); time.sleep(1.0)
     bar = page.locator("[data-testid=setup-bar]")
     check("phone: setup folds into a one-line bar after Open", bar.is_visible() and not page.locator("[data-testid=open-blank]").is_visible() and "Blank canvas · 12 × 16 in" in bar.inner_text(), bar.inner_text())
@@ -24,7 +25,7 @@ def phone(p):
     small = page.evaluate("""() => [...document.querySelectorAll('.chart__dock button, .chart__bar button, [data-testid=setup-change]')].filter(e=>e.offsetParent).map(e=>{const r=e.getBoundingClientRect(); return [e.textContent.trim().slice(0,12), Math.round(r.width), Math.round(r.height)];}).filter(x=>x[1]<44||x[2]<44)""")
     check("phone: dock, header buttons and Change are all at least 44 x 44", not small, str(small))
     ch = page.locator("[data-testid=setup-change]"); ch.tap(); time.sleep(0.4)
-    check("phone: Change opens the setup again (size options visible)", page.locator('input[type=radio][value="12x16"]').is_visible() and ch.inner_text() == "Hide")
+    check("phone: Change opens the setup again (size steps visible)", page.locator("[data-testid=manual-w]").is_visible() and ch.inner_text() == "Hide")
     ch.tap(); time.sleep(0.4)
     check("phone: Hide folds it away again", not page.locator("[data-testid=open-blank]").is_visible() and ch.inner_text() == "Change")
     # rotation: sideways then back; chart is refitted both times
@@ -41,7 +42,7 @@ def phone(p):
     page.get_by_role("button", name="Fit to Screen").tap(); time.sleep(0.5)
     check("phone: Fit to Screen shows the whole chart again", whole(page))
     # picture flow folds too
-    page.goto(b.URL); page.wait_for_selector(".start__card"); page.set_input_files("input[type=file]:not([data-testid=import-backup])", b.IMG); time.sleep(0.8)
+    page.goto(b.URL); page.wait_for_selector("[data-testid=mode-manual-choice]", state="attached"); page.set_input_files("input[type=file]:not([data-testid=import-backup])", b.IMG); time.sleep(0.8)
     b.radio(page, "12x16"); page.get_by_role("button", name="Create My Crochet Grid").tap()
     page.wait_for_selector("[data-testid=chart-canvas]", state="visible", timeout=60000); time.sleep(1.0)
     check("phone: a converted chart folds the setup too", page.locator("[data-testid=setup-bar]").is_visible() and "Your picture" in page.locator("[data-testid=setup-bar]").inner_text())
@@ -49,8 +50,8 @@ def phone(p):
 
 def desktop(p):
     br = p.chromium.launch(); page = br.new_context(viewport={"width": 1100, "height": 1000}).new_page()
-    page.goto(b.URL); page.wait_for_selector(".start__card")
-    page.locator("[data-testid=start-scratch]").click(force=True); page.locator("[data-testid=open-blank]").click()
+    page.goto(b.URL); page.wait_for_selector("[data-testid=mode-manual-choice]", state="attached")
+    start_blank(page); page.locator("[data-testid=open-blank]").click()
     page.wait_for_selector("[data-testid=chart-canvas]", state="visible"); time.sleep(0.8)
     check("desktop: setup folds into the summary bar too (the chart is the workspace)", page.locator("[data-testid=setup-bar]").is_visible() and not page.locator("[data-testid=open-blank]").is_visible())
     br.close()

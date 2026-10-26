@@ -1,5 +1,6 @@
 """Phase 2: the editor fills the screen it is on. Measured, not guessed: whole chart visible, undistorted, rulers aligned,
 tools/colors reachable, every target >= 44px, and the same after rotating / resizing."""
+from _blank import start_blank
 import re, sys, time
 from playwright.sync_api import sync_playwright
 URL = "http://127.0.0.1:5173/"
@@ -20,8 +21,8 @@ JS = """() => {
     paint: reach('Paint'), undo: reach('Undo'), fill: reach('Fill'), color: !!document.querySelector('.chart__color') && (() => { const b = document.querySelector('.chart__color').getBoundingClientRect(); return b.right <= innerWidth + 1 && b.left >= -1; })() }; }"""
 
 def open_chart(page, kind="24x32"):
-    page.goto(URL); page.wait_for_load_state("networkidle"); page.wait_for_selector("[data-testid=start-scratch]")
-    page.locator("[data-testid=start-scratch]").click(force=True); time.sleep(0.4)
+    page.goto(URL); page.wait_for_load_state("networkidle"); page.wait_for_selector("[data-testid=mode-manual-choice]", state="attached")
+    start_blank(page); time.sleep(0.4)
     page.locator("[data-testid=open-blank]").click(); page.wait_for_selector("[data-testid=chart-canvas]", state="visible"); time.sleep(1.0)
 
 def look(page):

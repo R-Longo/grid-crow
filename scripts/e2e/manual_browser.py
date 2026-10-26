@@ -22,7 +22,7 @@ def run(p):
         check(f"{tag}: eight preset sizes (plus orientation/colors)", sum(1 for s in sizes if " × " in s and " in" in s) == 8, str(sizes))
         check(f"{tag}: 9 x 16 and 12 x 12 are offered", any("9 × 16" in s for s in sizes) and any("12 × 12" in s for s in sizes))
         check(f"{tag}: manual page hidden at first", T(page, "manual-page").count() == 0)
-        T(page, "mode-manual-choice").check(force=True); time.sleep(0.3)
+        T(page, "mode-manual-choice").click(force=True); time.sleep(0.3)
         check(f"{tag}: manual page opens", T(page, "manual-page").is_visible())
         check(f"{tag}: presets are gone from the page", page.get_by_text("Finished tapestry size").count() == 0)
         check(f"{tag}: nothing to build until gauge and size are typed", T(page, "open-blank").count() == 0 or True)
@@ -61,7 +61,7 @@ def run(p):
         check(f"{tag}: saved", "Saved" in T(page, "save-status").inner_text(), T(page, "save-status").inner_text())
         page.reload(); page.wait_for_load_state("networkidle"); time.sleep(0.5)
         # the swatch is remembered
-        T(page, "mode-manual-choice").check(force=True); time.sleep(0.3)
+        T(page, "mode-manual-choice").click(force=True); time.sleep(0.3)
         check(f"{tag}: the last swatch is remembered", T(page, "manual-sw").input_value() == "10" and T(page, "manual-shIn").input_value() == "2")
         # open the saved project
         page.wait_for_selector("[data-testid=projects-toggle]", timeout=10000)
@@ -81,7 +81,7 @@ def run(p):
     # picture at your own gauge, desktop
     ctx = br.new_context(viewport={"width": 1440, "height": 900}); page = ctx.new_page(); page.on("pageerror", lambda e: errors.append(str(e)))
     page.goto(URL); page.wait_for_load_state("networkidle")
-    T(page, "mode-manual-choice").check(force=True); time.sleep(0.3)
+    T(page, "mode-manual-choice").click(force=True); time.sleep(0.3)
     fill(page, "10", "2.5", "10", "2.5", "10", "15"); time.sleep(0.2)
     T(page, "manual-start-image").check(force=True); time.sleep(0.2)
     page.set_input_files("input[type=file]:not([data-testid=import-backup])", IMG); time.sleep(1)

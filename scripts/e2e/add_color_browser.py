@@ -1,4 +1,5 @@
 """Add a NEW yarn color (e.g. pink) and paint with it, on a converted picture and on a blank canvas, desktop and phone."""
+from _blank import start_blank
 import re, sys, time
 from playwright.sync_api import sync_playwright
 URL = "http://127.0.0.1:5173/"; IMG = "/tmp/claude-0/scratch/imgs/hand_line.png"
@@ -18,7 +19,7 @@ def open_editor(page, touch):
 def build(page, mode):
     page.goto(URL); page.wait_for_load_state("networkidle")
     if mode == "blank":
-        page.wait_for_selector("[data-testid=start-scratch]"); page.locator("[data-testid=start-scratch]").click(force=True); time.sleep(0.4)
+        page.wait_for_selector("[data-testid=mode-manual-choice]", state="attached"); start_blank(page); time.sleep(0.4)
         page.locator("[data-testid=open-blank]").click()
     else:
         page.set_input_files("input[type=file]:not([data-testid=import-backup])", IMG); time.sleep(1)

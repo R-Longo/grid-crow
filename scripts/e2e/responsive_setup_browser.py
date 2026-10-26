@@ -1,5 +1,6 @@
 """Responsive setup / page shell (Phase 1): layouts per viewport, no overflow, collapse and expand without losing the chart.
 Needs the dev server. python3 responsive_setup_browser.py"""
+from _blank import start_blank
 import sys, time
 from playwright.sync_api import sync_playwright
 import blank_browser as b
@@ -20,7 +21,7 @@ def run(p):
         check(f"{tag}: setup (empty) has no horizontal overflow", not overflow(pg))
         pg.set_input_files("input[type=file]:not([data-testid=import-backup])", b.IMG); time.sleep(0.9)
         panel = rect(pg, ".panel")
-        cards = pg.locator(".start__card"); c0, c1 = cards.nth(0).bounding_box(), cards.nth(1).bounding_box()
+        cards = pg.locator(".mode__tile"); c0, c1 = cards.nth(0).bounding_box(), cards.nth(1).bounding_box()
         check(f"{tag}: the two starting buttons are side by side", abs(c0["y"] - c1["y"]) < 4 and c1["x"] > c0["x"] + c0["width"] - 2)
         up, ori, siz, colr, cta = (rect(pg, s_) for s_ in (".upload, .preview", "fieldset:has(input[value=portrait])", "fieldset:has(input[value=\"12x16\"])", "fieldset:has(input[value=\"6\"])", ".cta .btn--primary"))
         flow = [up and up["y"], ori and ori["y"], siz and siz["y"], colr and colr["y"], cta and cta["y"]]
@@ -29,7 +30,7 @@ def run(p):
         check(f"{tag}: setup is centred", abs((panel["x"] + panel["w"] / 2) - w / 2) < 2, f"{panel['x']:.0f}+{panel['w']:.0f}")
         check(f"{tag}: setup width is modest on big screens and uses the screen on phones", (panel["w"] <= (700 if w >= 900 else 33 * 16) + 1) and (w > 560 or panel["w"] >= w - 24), f"{panel['w']:.0f}")
         check(f"{tag}: picture setup has no horizontal overflow", not overflow(pg))
-        pg.locator("[data-testid=start-scratch]").click(force=True); time.sleep(0.4)
+        start_blank(pg); time.sleep(0.4)
         check(f"{tag}: Blank Canvas setup has no upload/crop column", pg.locator(".setup__pic").count() == 0 and pg.locator("input[type=file]:not([data-testid=import-backup])").count() == 0)
         pb = rect(pg, ".panel")
         check(f"{tag}: Blank Canvas card is the same single column", abs(pb["w"] - panel["w"]) < 2, f"{pb['w']:.0f}")

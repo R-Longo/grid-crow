@@ -1,4 +1,5 @@
 """Row + stitch tracker: Track mode, tap / buttons, overlay, saved with the project, backup file, edit mode still paints."""
+from _blank import start_blank
 import json, re, sys, time
 from playwright.sync_api import sync_playwright
 URL = "http://127.0.0.1:5173/"
@@ -28,7 +29,7 @@ def run(p):
         ctx = b.new_context(viewport={"width": w, "height": h}, has_touch=touch, accept_downloads=True)
         page = ctx.new_page(); page.on("pageerror", lambda e: errors.append(str(e)))
         page.goto(URL); page.wait_for_load_state("networkidle")
-        page.locator("[data-testid=start-scratch]").click(force=True); time.sleep(0.3)
+        start_blank(page); time.sleep(0.3)
         page.locator("[data-testid=open-blank]").click()
         page.wait_for_selector("[data-testid=chart-canvas]", state="visible", timeout=30000); time.sleep(0.8)
         check(f"{tag}: no track bar in edit mode", page.locator("[data-testid=track-bar]").count() == 0)

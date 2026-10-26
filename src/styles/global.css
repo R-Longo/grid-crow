@@ -2509,5 +2509,15 @@ body {
 .manual__startcard:has(input:focus-visible) { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
 .manual__starttitle { font-weight: 700; }
 .manual__startsub { font-size: 0.8rem; opacity: 0.9; }
-@media (max-width: 22rem) { .manual__grid, .mode__tiles, .manual__start { grid-template-columns: 1fr; } }
+@media (max-width: 22rem) { .manual__grid, .manual__start { grid-template-columns: 1fr; } .mode__tile { padding: var(--space-2); } .mode__sub { font-size: 0.75rem; } }
 .start[hidden] { display: none; }
+
+/* Quick Start: a quiet link to start blank instead of from a picture */
+.startnote { margin: 0 0 var(--space-4); text-align: center; color: var(--text-muted); font-size: 0.92rem; }
+.startlink { position: relative; display: inline-block; min-height: 44px; line-height: 44px; }
+.startlink span { color: var(--accent); text-decoration: underline; cursor: pointer; font-weight: 600; }
+.startlink input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.startlink:has(input:focus-visible) { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+.manual { grid-template-columns: minmax(0, 1fr); }
+.manual__step, .manual__grid, .manual__field { min-width: 0; }
+.manual__field input { width: 100%; min-width: 0; }
