@@ -101,7 +101,7 @@ def verify_png(tag, path, before, after, pal):
     img = Image.open(path).convert("RGB")
     used = [(h, n) for h, n in pal if n > 0]
     L = probe(len(used))
-    check(f"{tag}: the PNG is {L['width']} x {L['height']} px (inside the phone-safe pixel budget)", img.size == (L["width"], L["height"]) and img.width * img.height <= 12_000_000, f"{img.size}")
+    check(f"{tag}: the PNG is {L['width']} x {L['height']} px (inside the phone-safe pixel budget)", img.size == (L["width"], L["height"]) and img.width * img.height <= 12_500_000, f"{img.size}")
     bad = 0; wrong_vs_before = 0
     for r in range(ROWS):
         for c in range(COLS):

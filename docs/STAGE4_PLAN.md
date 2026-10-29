@@ -277,3 +277,10 @@ Once a chart opens, the editor is a workspace the height of the screen (under th
 ## 26. Strengthen Lines on 9 x 16
 
 - Offered when the chart is 48+ stitches wide OR has 2500+ stitches in all, so the tall 9 x 16 (36 x 72) gets it while 6 x 8 and 8 x 10 do not. `strengthenOffered(cols, rows)`.
+
+## 27. Foundation chain and row-by-row instructions
+
+- Foundation chain = stitches in row 1 plus one turning chain (`foundationChain(cols)` in `engine/export/pattern.ts`): a 64 × 90 chart says "Chain 65." It depends only on the chart's width. It is never a chart row, and a turning chain is never a stitch (every row is exactly `cols` single crochet). Row 1 is RS ("starting in the second chain from the hook"), row 2 WS ("Chain 1, turn"), then "chain 1 and turn between rows".
+- Shown as "Starting instructions" in the sidebar/phone panel (`StartInstructions.tsx`), as a paragraph in the PNG header and every PDF key.
+- New PDF layout "Row-by-row instructions (written)" (`engine/export/rows.ts`, `pdf/rows.ts`): one line per row with number, RS/WS, direction and numbered color blocks in working order (odd rows right to left). Tests: `rows.test.ts`, `pattern.test.ts`.
+- The PNG header carries a one-line version of the start; the full wording is in the PDFs and on screen. PNG pixel budget 12.0M to 12.5M (still well under phone canvas limits) so the biggest chart keeps 27 px stitches.

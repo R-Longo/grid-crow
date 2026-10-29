@@ -36,6 +36,7 @@ import { BLANK_BACKGROUND_SLOT } from "../engine/blank";
 import type { AddColorResult, RecolorResult } from "../engine/editor/recolor";
 import { DownloadPanel } from "./DownloadPanel";
 import { YarnEstimate } from "./YarnEstimate";
+import { StartInstructions } from "./StartInstructions";
 import type { DownloadChoices, DownloadNote } from "./DownloadPanel";
 import { buildPatternModel, patternFileName } from "../engine/export/pattern";
 import { downloadBlob, renderPatternPng } from "../lib/exportPng";
@@ -761,7 +762,7 @@ export function ChartView({
       const snapshot = exportSession.matrix;
       const model = buildPatternModel(snapshot, units);
       const layoutKind = downloadChoices.pdfLayout;
-      const name = patternFileName(model, "pdf", layoutKind === "tiled" ? "large-print" : layoutKind === "compact" ? "compact" : "");
+      const name = patternFileName(model, "pdf", layoutKind === "tiled" ? "large-print" : layoutKind === "compact" ? "compact" : layoutKind === "rows" ? "row-by-row" : "");
       const blob = await renderPatternPdf(model, {
         layout: downloadChoices.pdfLayout,
         letters: downloadChoices.pdfLetters,
@@ -1342,6 +1343,7 @@ export function ChartView({
               {viewToggle && <div className="chart__options-row">{viewToggle}</div>}
               {colorEditor && <div className="chart__options-row">{colorEditor}</div>}
               <div className="chart__options-row">
+                <StartInstructions cols={matrix.cols} />
                 <YarnEstimate matrix={matrix} units={units} />
               </div>
               <div className="chart__options-row">{gridCheck}</div>
@@ -1416,6 +1418,7 @@ export function ChartView({
             </h3>
             {palette}
             {colorEditor}
+            <StartInstructions cols={matrix.cols} />
             <YarnEstimate matrix={matrix} units={units} />
           </div>
           <div className="chart__downloads">

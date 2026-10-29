@@ -148,6 +148,34 @@ export function gaugeLine(custom?: StitchGauge, units: UnitSystem = "imperial"):
 
 export const NUMBERING_NOTE = "Row 1 is the bottom row. Stitch 1 is at the right. Odd rows: work right to left. Even rows: turn, work left to right.";
 
+/**
+ * How to start the work. The foundation chain is one chain per stitch of the first row, plus one turning chain, so it
+ * depends only on the chart's width. It is not a chart row, and a turning chain never counts as a stitch: every chart row
+ * is exactly `cols` single crochet.
+ */
+export function foundationChain(cols: number): number {
+  return cols + 1;
+}
+
+export interface StartStep {
+  heading: string;
+  text: string;
+}
+
+export function startingSteps(cols: number): StartStep[] {
+  return [
+    { heading: "FOUNDATION", text: `Chain ${foundationChain(cols)}.` },
+    { heading: "ROW 1 — Right Side (RS)", text: `Starting in the second chain from the hook, work ${cols} single crochet stitches following Row 1 of the chart.` },
+    { heading: "ROW 2 — Wrong Side (WS)", text: `Chain 1, turn. Work ${cols} single crochet stitches following Row 2 of the chart. The turning chain does not count as a stitch.` },
+    { heading: "REMAINING ROWS", text: "Continue following the chart, chaining 1 and turning between rows." },
+  ];
+}
+
+/** The same steps as one short paragraph, for the printed key where space is tight. */
+export function startingParagraph(cols: number): string {
+  return `FOUNDATION: Chain ${foundationChain(cols)}. ROW 1 (RS): Starting in the second chain from the hook, work ${cols} single crochet following Row 1 of the chart. ROW 2 (WS): Chain 1, turn (the turning chain is not a stitch). Work ${cols} single crochet following Row 2. Continue following the chart, chaining 1 and turning between rows.`;
+}
+
 export function patternFileName(m: PatternModel, extension: "png" | "pdf", suffix = ""): string {
   return `gridcrow-pattern-${m.cols}x${m.rows}${suffix ? "-" + suffix : ""}.${extension}`;
 }

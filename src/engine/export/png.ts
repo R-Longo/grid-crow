@@ -1,4 +1,4 @@
-import { STITCH_ASPECT, finishedLine, formatCount, gaugeLine, inkOn, labelNumbers, sizeLine, NUMBERING_NOTE, stitchNumbers, yardsText, yarnNote } from "./pattern";
+import { STITCH_ASPECT, finishedLine, formatCount, gaugeLine, inkOn, labelNumbers, sizeLine, NUMBERING_NOTE, foundationChain, stitchNumbers, yardsText, yarnNote } from "./pattern";
 import type { PatternModel } from "./pattern";
 
 /** The small part of the canvas drawing API the exporters use, so they can be tested without a browser. */
@@ -15,7 +15,7 @@ export interface Ctx2D {
  * A PNG large enough to zoom into, small enough for a phone's canvas. Phones refuse canvases much beyond 16.7 million
  * pixels, so cells are drawn as large as the budget allows (all sizes keep the exact 9:8 shape of a real stitch).
  */
-export const PNG_LIMITS = { maxPixels: 12_000_000, maxSide: 12_000 };
+export const PNG_LIMITS = { maxPixels: 12_500_000, maxSide: 12_000 };
 /** Cell widths to try, largest first. Each is a multiple of 9 so the cell height (8/9 of it) is a whole number of pixels. */
 const CELL_WIDTHS = [54, 45, 36, 27, 18];
 
@@ -114,7 +114,7 @@ function build(model: PatternModel, cellW: number, letters: boolean): PngLayout 
   let y = M + titleSize * 0.65;
   header.push({ text: "GridCrow crochet chart", x: M, y, size: titleSize, bold: true, serif: true, color: INK, align: "left" });
   y += titleSize * 0.65 + info * 0.9;
-  const lines = [sizeLine(model), finishedLine(model), ...wrapText(gaugeLine(model.gauge, model.units), maxChars), ...wrapText(NUMBERING_NOTE, maxChars)];
+  const lines = [sizeLine(model), finishedLine(model), ...wrapText(gaugeLine(model.gauge, model.units), maxChars), ...wrapText(NUMBERING_NOTE, maxChars), ...wrapText(`Foundation: chain ${foundationChain(model.cols)}. Row 1 (RS): start in the 2nd chain from the hook. Chain 1 and turn between rows.`, maxChars)];
   lines.forEach((t, i) => {
     header.push({ text: t, x: M, y, size: info, color: i === 0 ? INK : MUTED, bold: i === 0, align: "left" });
     y += info * 1.5;

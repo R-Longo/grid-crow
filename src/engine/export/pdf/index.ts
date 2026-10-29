@@ -1,10 +1,11 @@
 import type { PatternModel } from "../pattern";
 import { layoutFit } from "./fit";
+import { layoutRows } from "./rows";
 import type { PdfDoc } from "./ops";
 import { COMPACT_PROFILE, layoutTiled } from "./tiled";
 import { writePdf } from "./writer";
 
-export type PdfLayoutKind = "fit" | "tiled" | "compact";
+export type PdfLayoutKind = "fit" | "tiled" | "compact" | "rows";
 
 export interface PdfOptions {
   layout: PdfLayoutKind;
@@ -17,7 +18,7 @@ export const DEFAULT_PDF_OPTIONS: PdfOptions = { layout: "fit", letters: true };
 /** The pages of the PDF, as drawing instructions (tests read these). */
 export function buildPdfDoc(model: PatternModel, options: PdfOptions = DEFAULT_PDF_OPTIONS): PdfDoc {
   const pages =
-    options.layout === "tiled" ? layoutTiled(model, options) : options.layout === "compact" ? layoutTiled(model, options, COMPACT_PROFILE) : layoutFit(model, options);
+    options.layout === "rows" ? layoutRows(model) : options.layout === "tiled" ? layoutTiled(model, options) : options.layout === "compact" ? layoutTiled(model, options, COMPACT_PROFILE) : layoutFit(model, options);
   return { title: `GridCrow crochet chart ${model.cols} x ${model.rows}`, pages };
 }
 

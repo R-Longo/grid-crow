@@ -53,7 +53,7 @@ export function DownloadPanel({ onPng, onPdf, busy, note, choices, onChoices, ti
       <fieldset className="download__pdf">
         <legend className="download__legend">PDF, to read or print</legend>
         <label className="download__check">
-          <input type="radio" name={`${uid}-layout`} data-testid="pdf-fit" checked={!tiled && !compact} onChange={() => onChoices({ ...choices, pdfLayout: "fit" })} />
+          <input type="radio" name={`${uid}-layout`} data-testid="pdf-fit" checked={!tiled && !compact && choices.pdfLayout !== "rows"} onChange={() => onChoices({ ...choices, pdfLayout: "fit" })} />
           <span>Fit to one page</span>
         </label>
         <label className="download__check">
@@ -64,6 +64,15 @@ export function DownloadPanel({ onPng, onPdf, busy, note, choices, onChoices, ti
           <input type="radio" name={`${uid}-layout`} data-testid="pdf-compact" checked={compact} onChange={() => onChoices({ ...choices, pdfLayout: "compact" })} />
           <span>Compact, fewer pages</span>
         </label>
+        <label className="download__check">
+          <input type="radio" name={`${uid}-layout`} data-testid="pdf-rows" checked={choices.pdfLayout === "rows"} onChange={() => onChoices({ ...choices, pdfLayout: "rows" })} />
+          <span>Row-by-row instructions (written)</span>
+        </label>
+        {choices.pdfLayout === "rows" && (
+          <p className="download__text download__tiled" data-testid="pdf-rows-help">
+            Every row on its own line: row number, right side or wrong side, and the color blocks in the order you crochet them, starting with the foundation chain. No chart pictures.
+          </p>
+        )}
         {compact && (
           <p className="download__text download__tiled" data-testid="pdf-compact-help">
             {compactPages === 2

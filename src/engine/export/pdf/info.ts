@@ -1,4 +1,4 @@
-import { NUMBERING_NOTE, finishedLine, formatCount, gaugeLine, sizeLine, yardsText, yarnNote } from "../pattern";
+import { NUMBERING_NOTE, finishedLine, formatCount, gaugeLine, sizeLine, startingParagraph, yardsText, yarnNote } from "../pattern";
 import type { PatternModel } from "../pattern";
 import { INK, MUTED } from "./chart";
 import { textWidth, wrapToWidth } from "./metrics";
@@ -52,6 +52,7 @@ export function drawInfo(ops: Op[], model: PatternModel, x: number, y: number, w
   y = paragraph(ops, sizeLine(model) + ". " + finishedLine(model) + ".", x, y, w, 10, { color: INK });
   y = paragraph(ops, gaugeLine(model.gauge, model.units), x, y, w, 9.5);
   y = paragraph(ops, NUMBERING_NOTE, x, y, w, 9.5);
+  y = paragraph(ops, startingParagraph(model.cols), x, y, w, 9.5, { tag: "start-text" });
   y = paragraph(ops, `${STITCH_COUNT_NOTE} ${yarnNote(model)}`, x, y, w, 9.5, { tag: "yarn-note" });
   for (const e of extra) y = paragraph(ops, e, x, y, w, 9.5);
   void textWidth;
